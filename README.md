@@ -26,7 +26,7 @@ open UVM_intro/index.html          # macOS
 | 章 | 主題 | 重點 |
 |---|---|---|
 | 1 | 為什麼需要 UVM | 30 行的 hello world vs 420 行的完整 TB，多出來的東西買到了什麼 |
-| 2 | 兩個世界與那道橋 | static module 世界 vs dynamic class 世界；`interface` / `modport` / `virtual interface` 是唯一通道 |
+| 2 | Module 與 Class 兩個世界 | static module 世界 vs dynamic class 世界；`interface` / `modport` / `virtual interface` 是唯一通道 |
 | 3 | 架構全景圖 | test → env → agent → driver / sequencer / monitor，外掛 scoreboard 與 coverage |
 | **4** | **Datapath** | 一筆 transaction 從產生到被檢查走過的 8 站，每站標明「資料此刻在哪、是什麼型態」 |
 | **5** | **資料型態總覽** | `uvm_object` vs `uvm_component` 兩大家族、建構子簽章、註冊巨集、`new()` vs `type_id::create()`、參數化型別、`logic`/`bit`、`===`/`==`、`<=`/`=` |
@@ -53,4 +53,3 @@ TLM 三種型態、APB 時序波形。
 - 單一 `index.html`，約 95 KB，無任何外部依賴（無 CDN、無字型、無圖檔）
 - 深色 / 淺色主題自動跟隨系統
 - 手寫的極簡 SystemVerilog 語法上色（純 inline JS）
-- 響應式版面，手機可讀
