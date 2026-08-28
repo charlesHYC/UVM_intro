@@ -1444,23 +1444,23 @@ if (iter &gt;= max_iter)
 
   <figure>
     <div class="svgbox">
-    <svg viewBox="0 0 900 280" role="img" aria-label="APB 時序：IDLE、SETUP、ACCESS 三個階段與 pready wait state">
+    <svg viewBox="0 0 900 292" role="img" aria-label="APB 時序：IDLE、SETUP、ACCESS 三個階段與 pready wait state">
       <text class="s-sub" x="128" y="50" style="text-anchor:end; font-family:var(--mono); font-size:12px; fill:var(--fg)">clk</text>
       <text class="s-sub" x="128" y="104" style="text-anchor:end; font-family:var(--mono); font-size:12px; fill:var(--fg)">psel</text>
       <text class="s-sub" x="128" y="158" style="text-anchor:end; font-family:var(--mono); font-size:12px; fill:var(--fg)">penable</text>
       <text class="s-sub" x="128" y="212" style="text-anchor:end; font-family:var(--mono); font-size:12px; fill:var(--fg)">pready</text>
 
       <!-- phase guides -->
-      <line class="s-dash" x1="300" y1="26" x2="300" y2="246"/>
-      <line class="s-dash" x1="380" y1="26" x2="380" y2="246"/>
-      <line class="s-dash" x1="540" y1="26" x2="540" y2="246"/>
+      <line class="s-dash" x1="300" y1="24" x2="300" y2="252"/>
+      <line class="s-dash" x1="380" y1="24" x2="380" y2="252"/>
+      <line class="s-dash" x1="540" y1="24" x2="540" y2="252"/>
 
-      <rect x="300" y="24" width="80" height="18" fill="var(--blue-soft)" stroke="var(--blue)" stroke-width="1"/>
-      <text class="s-sub" x="340" y="33" style="fill:var(--blue)">SETUP</text>
-      <rect x="380" y="24" width="160" height="18" fill="var(--green-soft)" stroke="var(--green)" stroke-width="1"/>
-      <text class="s-sub" x="460" y="33" style="fill:var(--green)">ACCESS（含 1 個 wait state）</text>
-      <text class="s-sub" x="220" y="33" style="fill:var(--fg-faint)">IDLE</text>
-      <text class="s-sub" x="700" y="33" style="fill:var(--fg-faint)">IDLE</text>
+      <rect x="300" y="4" width="80" height="18" fill="var(--blue-soft)" stroke="var(--blue)" stroke-width="1"/>
+      <text class="s-sub" x="340" y="13" style="fill:var(--blue)">SETUP</text>
+      <rect x="380" y="4" width="160" height="18" fill="var(--green-soft)" stroke="var(--green)" stroke-width="1"/>
+      <text class="s-sub" x="460" y="13" style="fill:var(--green)">ACCESS</text>
+      <text class="s-sub" x="220" y="13" style="fill:var(--fg-faint)">IDLE</text>
+      <text class="s-sub" x="700" y="13" style="fill:var(--fg-faint)">IDLE</text>
 
       <!-- clk -->
       <path class="s-wave" d="M140,64 L140,36 L180,36 L180,64 L220,64 L220,36 L260,36 L260,64 L300,64 L300,36 L340,36 L340,64 L380,64 L380,36 L420,36 L420,64 L460,64 L460,36 L500,36 L500,64 L540,64 L540,36 L580,36 L580,64 L620,64 L620,36 L660,36 L660,64 L700,64 L700,36 L740,36 L740,64 L780,64 L780,36 L820,36 L820,64 L860,64"/>
@@ -1471,8 +1471,10 @@ if (iter &gt;= max_iter)
       <!-- pready -->
       <path class="s-wave" d="M140,226 L460,226 L460,198 L540,198 L540,226 L860,226"/>
 
-      <text class="s-sub" x="540" y="250" style="fill:var(--accent); font-size:13px">▲</text>
-      <text class="s-sub" x="140" y="270" style="text-anchor:start; fill:var(--accent)">▲ psel &amp;&amp; penable &amp;&amp; pready 同時成立的這個邊緣＝transfer 完成，monitor 在此取樣</text>
+      <text class="s-sub" x="420" y="243" style="fill:var(--green); font-size:10px">wait state</text>
+
+      <text class="s-sub" x="540" y="249" style="fill:var(--accent); font-size:13px">▲</text>
+      <text class="s-sub" x="140" y="274" style="text-anchor:start; fill:var(--accent)">psel &amp;&amp; penable &amp;&amp; pready 同時成立的邊緣＝transfer 完成，monitor 在此取樣</text>
     </svg>
     </div>
     <figcaption>APB transfer：PSEL 先拉高進 Setup，下一拍 PENABLE 拉高進 Access，
