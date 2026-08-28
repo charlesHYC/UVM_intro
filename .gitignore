@@ -1,0 +1,24 @@
+# 課程原始教材（不進版控）
+UVM_LABS/
+*.tar
+
+# VCS / Verdi 模擬產物
+simv
+simv.*
+csrc/
+*.daidir/
+*.vdb/
+ucli.key
+vc_hdrs.h
+DVEfiles/
+.vcs*
+*.log
+*.vpd
+*.fsdb
+novas.*
+verdiLog/
+urg*/
+*.vcd
+
+# macOS
+.DS_Store

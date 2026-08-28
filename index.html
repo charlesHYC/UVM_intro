@@ -1,0 +1,1930 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UVM 基礎觀念筆記 — 從 8 個 Lab 看懂架構、資料流與型態</title>
+<meta name="description" content="給初學者的 UVM 入門：架構全景、資料怎麼流、有哪些資料型態、以及新手最常踩的坑。">
+<style>
+/* ---------- tokens：淺色為預設，深色只覆寫顏色 ---------- */
+:root{
+  --bg:#f7f7f5;
+  --surface:#ffffff;
+  --card:#fbfbf9;
+  --fg:#1c1c1a;
+  --fg-muted:#5c5c55;
+  --fg-faint:#8a8a80;
+  --line:#dedcd4;
+  --line-strong:#c2bfb3;
+  --accent:#b4541f;
+  --accent-soft:#fbeee6;
+  --blue:#2b5f9e;
+  --blue-soft:#e8f0f9;
+  --green:#3f7145;
+  --green-soft:#e9f2ea;
+  --purple:#6b4b8f;
+  --purple-soft:#f0eaf7;
+  --danger:#a33232;
+  --danger-soft:#fbeaea;
+  --code-bg:#f2f1ec;
+  --code-fg:#26261f;
+  --k:#9b2c6f;   /* keyword */
+  --t:#2b5f9e;   /* type */
+  --s:#3f7145;   /* string */
+  --c:#8a8a80;   /* comment */
+  --m:#b4541f;   /* macro */
+  --n:#6b4b8f;   /* number */
+  --shadow:0 1px 2px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.04);
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151513;
+    --surface:#1d1d1a;
+    --card:#222220;
+    --fg:#e8e6df;
+    --fg-muted:#a5a297;
+    --fg-faint:#78766d;
+    --line:#33332f;
+    --line-strong:#4a4a44;
+    --accent:#e08b53;
+    --accent-soft:#2e2119;
+    --blue:#7aaee0;
+    --blue-soft:#1a2430;
+    --green:#83bd8c;
+    --green-soft:#1a2620;
+    --purple:#b294d8;
+    --purple-soft:#241d30;
+    --danger:#e07b7b;
+    --danger-soft:#2e1c1c;
+    --code-bg:#1a1a18;
+    --code-fg:#ddd9d0;
+    --k:#e08fbe;
+    --t:#7aaee0;
+    --s:#93c99b;
+    --c:#78766d;
+    --m:#e0a06a;
+    --n:#b294d8;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151513; --surface:#1d1d1a; --card:#222220;
+  --fg:#e8e6df; --fg-muted:#a5a297; --fg-faint:#78766d;
+  --line:#33332f; --line-strong:#4a4a44;
+  --accent:#e08b53; --accent-soft:#2e2119;
+  --blue:#7aaee0; --blue-soft:#1a2430;
+  --green:#83bd8c; --green-soft:#1a2620;
+  --purple:#b294d8; --purple-soft:#241d30;
+  --danger:#e07b7b; --danger-soft:#2e1c1c;
+  --code-bg:#1a1a18; --code-fg:#ddd9d0;
+  --k:#e08fbe; --t:#7aaee0; --s:#93c99b; --c:#78766d; --m:#e0a06a; --n:#b294d8;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth; scroll-padding-top:1.5rem}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:var(--sans); font-size:16px; line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1180px; margin:0 auto; padding:0 20px}
+.layout{display:grid; grid-template-columns:250px minmax(0,1fr); gap:44px; align-items:start}
+
+/* ---------- header ---------- */
+header.top{
+  border-bottom:1px solid var(--line);
+  background:var(--surface);
+  padding:56px 0 40px;
+  margin-bottom:44px;
+}
+.eyebrow{
+  font-size:.75rem; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--accent); font-weight:600; margin:0 0 14px;
+}
+h1{font-size:clamp(1.7rem,4vw,2.5rem); line-height:1.25; margin:0 0 16px; letter-spacing:-.01em}
+.lede{font-size:1.05rem; color:var(--fg-muted); max-width:62ch; margin:0}
+.meta{margin-top:22px; font-size:.85rem; color:var(--fg-faint); display:flex; flex-wrap:wrap; gap:8px 18px}
+.meta code{font-size:.82em}
+
+/* ---------- toc ---------- */
+nav.toc{position:sticky; top:20px; max-height:calc(100vh - 40px); overflow-y:auto; padding-bottom:24px}
+nav.toc h2{
+  font-size:.72rem; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--fg-faint); margin:0 0 12px; font-weight:600;
+}
+nav.toc ol{list-style:none; margin:0; padding:0; counter-reset:toc}
+nav.toc li{counter-increment:toc; margin:0}
+nav.toc a{
+  display:block; padding:5px 10px 5px 34px; position:relative;
+  color:var(--fg-muted); text-decoration:none; font-size:.875rem; line-height:1.45;
+  border-left:2px solid transparent; border-radius:0 4px 4px 0;
+}
+nav.toc a::before{
+  content:counter(toc); position:absolute; left:10px; top:5px;
+  font-size:.72rem; color:var(--fg-faint); font-variant-numeric:tabular-nums;
+}
+nav.toc a:hover{color:var(--fg); background:var(--card)}
+nav.toc a.active{color:var(--accent); border-left-color:var(--accent); font-weight:600}
+nav.toc a.active::before{color:var(--accent)}
+
+/* ---------- sections ---------- */
+main{min-width:0; padding-bottom:100px}
+section{scroll-margin-top:24px; margin-bottom:64px}
+h2.sec{
+  font-size:1.45rem; margin:0 0 6px; letter-spacing:-.01em;
+  padding-bottom:10px; border-bottom:2px solid var(--line-strong);
+}
+h2.sec .num{color:var(--accent); font-variant-numeric:tabular-nums; margin-right:.5em; font-weight:700}
+h3{font-size:1.05rem; margin:34px 0 10px; letter-spacing:-.005em}
+h4{font-size:.95rem; margin:22px 0 8px; color:var(--fg-muted)}
+p{margin:0 0 14px}
+ul,ol{margin:0 0 14px; padding-left:1.35em}
+li{margin-bottom:6px}
+strong{font-weight:650}
+a{color:var(--blue)}
+
+code{
+  font-family:var(--mono); font-size:.855em;
+  background:var(--code-bg); color:var(--code-fg);
+  padding:.12em .38em; border-radius:4px;
+  border:1px solid var(--line);
+  word-break:break-word;
+}
+
+/* ---------- code blocks ---------- */
+.code{margin:0 0 18px; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--code-bg)}
+.code .cap{
+  font-family:var(--mono); font-size:.72rem; color:var(--fg-faint);
+  padding:7px 12px; background:var(--surface); border-bottom:1px solid var(--line);
+  display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+}
+.code .cap b{color:var(--accent); font-weight:600}
+.code pre{margin:0; padding:14px 16px; overflow-x:auto; font-family:var(--mono);
+  font-size:.82rem; line-height:1.65; color:var(--code-fg)}
+.code pre code{background:none; border:none; padding:0; font-size:1em}
+.tok-k{color:var(--k)} .tok-t{color:var(--t)} .tok-s{color:var(--s)}
+.tok-c{color:var(--c); font-style:italic} .tok-m{color:var(--m)} .tok-n{color:var(--n)}
+
+/* ---------- tables ---------- */
+.tbl{overflow-x:auto; margin:0 0 20px; border:1px solid var(--line); border-radius:8px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.875rem; min-width:520px}
+th,td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:top}
+th{background:var(--card); font-weight:650; font-size:.8rem; letter-spacing:.02em; white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td code, th code{font-size:.85em; white-space:nowrap}
+
+/* ---------- callouts ---------- */
+.note{
+  border-left:3px solid var(--blue); background:var(--blue-soft);
+  padding:12px 16px; border-radius:0 6px 6px 0; margin:0 0 18px; font-size:.92rem;
+}
+.warn{
+  border-left:3px solid var(--accent); background:var(--accent-soft);
+  padding:12px 16px; border-radius:0 6px 6px 0; margin:0 0 18px; font-size:.92rem;
+}
+.note p:last-child,.warn p:last-child{margin-bottom:0}
+.note b,.warn b{color:var(--fg)}
+
+/* ---------- figures ---------- */
+figure{margin:0 0 24px; background:var(--surface); border:1px solid var(--line);
+  border-radius:10px; padding:18px 16px 12px; box-shadow:var(--shadow)}
+figure .svgbox{overflow-x:auto}
+figure svg{display:block; width:100%; min-width:520px; height:auto}
+figcaption{font-size:.8rem; color:var(--fg-faint); margin-top:12px; text-align:center; line-height:1.6}
+
+/* svg helpers */
+.s-box{fill:var(--card); stroke:var(--line-strong); stroke-width:1.4}
+.s-box-a{fill:var(--accent-soft); stroke:var(--accent); stroke-width:1.6}
+.s-box-b{fill:var(--blue-soft); stroke:var(--blue); stroke-width:1.4}
+.s-box-g{fill:var(--green-soft); stroke:var(--green); stroke-width:1.4}
+.s-box-p{fill:var(--purple-soft); stroke:var(--purple); stroke-width:1.4}
+.s-t{fill:var(--fg); font-family:var(--sans); font-size:13px; text-anchor:middle; dominant-baseline:middle}
+.s-t-mono{fill:var(--fg); font-family:var(--mono); font-size:12px; text-anchor:middle; dominant-baseline:middle}
+.s-sub{fill:var(--fg-muted); font-family:var(--mono); font-size:10.5px; text-anchor:middle; dominant-baseline:middle}
+.s-lbl{fill:var(--fg-muted); font-family:var(--sans); font-size:11px; text-anchor:middle; dominant-baseline:middle}
+.s-ln{stroke:var(--line-strong); stroke-width:1.5; fill:none}
+.s-ar{stroke:var(--accent); stroke-width:1.8; fill:none}
+.s-dash{stroke:var(--line-strong); stroke-width:1.2; stroke-dasharray:5 4; fill:none}
+.s-wave{stroke:var(--blue); stroke-width:1.8; fill:none}
+.s-num{fill:var(--accent); font-family:var(--mono); font-size:11px; font-weight:700; text-anchor:middle; dominant-baseline:middle}
+
+/* ---------- pitfall cards ---------- */
+.pit{
+  border:1px solid var(--line); border-left:3px solid var(--danger);
+  background:var(--surface); border-radius:0 8px 8px 0;
+  padding:14px 18px; margin:0 0 14px;
+}
+.pit h4{margin:0 0 8px; font-size:.98rem; color:var(--danger); display:flex; gap:10px; align-items:baseline}
+.pit h4 .idx{font-family:var(--mono); font-size:.8rem; color:var(--fg-faint); font-weight:600}
+.pit dl{margin:0; display:grid; grid-template-columns:auto minmax(0,1fr); gap:4px 12px; font-size:.9rem}
+.pit dt{color:var(--fg-faint); font-size:.78rem; padding-top:.28em; white-space:nowrap}
+.pit dd{margin:0}
+
+/* ---------- misc ---------- */
+.grid2{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin:0 0 20px}
+.mini{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:14px 16px}
+.mini h4{margin:0 0 8px; font-size:.92rem; color:var(--fg)}
+.mini p:last-child{margin-bottom:0}
+.mini ul{margin-bottom:0}
+.tag{display:inline-block; font-family:var(--mono); font-size:.7rem; padding:1px 7px;
+  border-radius:20px; border:1px solid currentColor; vertical-align:middle; margin-left:6px}
+.tag-obj{color:var(--purple)} .tag-cmp{color:var(--green)}
+.kbd{font-family:var(--mono); font-size:.8em; background:var(--card); border:1px solid var(--line-strong);
+  border-bottom-width:2px; border-radius:4px; padding:.1em .4em}
+footer{border-top:1px solid var(--line); padding:28px 0 60px; color:var(--fg-faint); font-size:.85rem}
+
+@media (max-width:900px){
+  .layout{grid-template-columns:minmax(0,1fr); gap:0}
+  nav.toc{position:static; max-height:none; margin-bottom:36px;
+    border:1px solid var(--line); border-radius:8px; padding:14px; background:var(--surface)}
+  nav.toc ol{columns:2; column-gap:16px}
+  nav.toc a{border-left:none; padding-left:28px}
+  nav.toc a.active{background:var(--accent-soft)}
+  header.top{padding:36px 0 28px; margin-bottom:28px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <p class="eyebrow">SystemVerilog / UVM 1.2 · 初學者筆記</p>
+    <h1>UVM 基礎觀念<br>從 8 個 Lab 看懂架構、資料流與型態</h1>
+    <p class="lede">
+      這份筆記不介紹「每個 Lab 在做什麼」，而是把 8 個 Lab 拆開當素材，
+      回答四個初學者最需要先搞懂的問題：<b>UVM 的架構長什麼樣</b>、
+      <b>一筆資料從產生到被檢查中間走過哪些站</b>、<b>沿路上它是什麼型態</b>、
+      以及<b>哪些細節不注意就會卡住</b>。
+    </p>
+    <div class="meta">
+      <span>主範例 DUT：<code>adder</code>（7-bit + 7-bit → 8-bit，1 cycle latency）</span>
+      <span>擴充範例：<code>apb_slave</code></span>
+      <span>模擬器：VCS + <code>-ntb_opts uvm-1.2</code></span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+<div class="layout">
+
+<nav class="toc">
+  <h2>目錄</h2>
+  <ol>
+    <li><a href="#s1">為什麼需要 UVM</a></li>
+    <li><a href="#s2">兩個世界與那道橋</a></li>
+    <li><a href="#s3">架構全景圖</a></li>
+    <li><a href="#s4">Datapath：資料走一遍</a></li>
+    <li><a href="#s5">資料型態總覽</a></li>
+    <li><a href="#s6">Phase 機制</a></li>
+    <li><a href="#s7">TLM：元件之間怎麼連</a></li>
+    <li><a href="#s8">config_db 設定通道</a></li>
+    <li><a href="#s9">Factory 與 Override</a></li>
+    <li><a href="#s10">Functional Coverage</a></li>
+    <li><a href="#s11">換一個協定會變什麼</a></li>
+    <li><a href="#s12">初學者地雷清單</a></li>
+    <li><a href="#s13">執行速查</a></li>
+    <li><a href="#s14">Lab 學習地圖</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ============ 1 ============ -->
+<section id="s1">
+  <h2 class="sec"><span class="num">01</span>為什麼需要 UVM</h2>
+
+  <p>最小的 UVM testbench 只有三十行。它做的事情就是「印一行字」：</p>
+
+  <div class="code">
+    <div class="cap"><span>最小 UVM testbench</span><b>lab1-a / hello_world_uvm.sv</b></div>
+<pre><code class="sv">program automatic test;
+
+  import uvm_pkg::*;
+  `include "uvm_macros.svh"        // 沒有這行，`uvm_info / `uvm_component_utils 都不能用
+
+  class hello_world extends uvm_test;
+    `uvm_component_utils(hello_world)          // 註冊到 factory
+
+    function new(string name = "hello_world", uvm_component parent = null);
+      super.new(name, parent);
+    endfunction
+
+    virtual task run_phase(uvm_phase phase);
+      phase.raise_objection(this);             // 舉手：我還沒做完，別結束模擬
+      #50;
+      `uvm_info("TEST", "Hello World!", UVM_MEDIUM)
+      phase.drop_objection(this);              // 放手：可以結束了
+    endtask
+  endclass
+
+  initial begin
+    run_test("hello_world");                   // 啟動 UVM，指定要跑哪個 test
+  end
+
+endprogram</code></pre>
+  </div>
+
+  <p>
+    同一個資料夾裡，測一顆<strong>加法器</strong>的 testbench 卻有四百多行、八個 class。
+    多出來的四百行不是為了加法本身 —— 加法只有一行 <code>expected = in1 + in2;</code>。
+    那四百行買到的是四件事：
+  </p>
+
+  <div class="grid2">
+    <div class="mini">
+      <h4>① 分工</h4>
+      <p>「產生刺激」「打到腳位上」「觀察波形」「判對錯」「算覆蓋率」拆成五個獨立 class，
+      改其中一個不用動其他四個。</p>
+    </div>
+    <div class="mini">
+      <h4>② 隨機</h4>
+      <p>測資是 <code>rand</code> 出來的，不是手寫的。換一個 <code>seed</code> 就是一組全新測資，不用改程式。</p>
+    </div>
+    <div class="mini">
+      <h4>③ 自動比對</h4>
+      <p>Scoreboard 自己算預期值跟 DUT 比，你不用盯波形。錯了自己噴 <code>UVM_ERROR</code>。</p>
+    </div>
+    <div class="mini">
+      <h4>④ 可量化</h4>
+      <p>Coverage 告訴你「測夠了沒」。可以寫成「跑到覆蓋率 50% 才停」，而不是「跑 100 次應該夠吧」。</p>
+    </div>
+  </div>
+
+  <div class="note">
+    <p><b>一句話總結：</b>UVM 不是幫你寫測試，是幫你把測試環境<strong>拆成可以各自替換的零件</strong>，
+    並約定好這些零件之間怎麼溝通（TLM）、什麼時候啟動（Phase）、怎麼被建立（Factory）、怎麼拿到設定（config_db）。
+    後面五章講的就是這四套約定。</p>
+  </div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section id="s2">
+  <h2 class="sec"><span class="num">02</span>兩個世界與那道橋</h2>
+
+  <p>
+    這是最容易讓初學者混亂的一點：一個 UVM testbench 裡其實有<strong>兩個完全不同的世界</strong>，
+    它們的生命週期、記憶體模型都不一樣。
+  </p>
+
+  <div class="tbl">
+  <table>
+    <thead><tr><th>　</th><th>Module 世界（靜態）</th><th>Class 世界（動態）</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>成員</b></td>
+        <td><code>module top</code>、<code>adder dut</code>、<code>adder_intf intf</code>、clk/rst 產生器</td>
+        <td><code>test</code>、<code>env_c</code>、<code>agent_c</code>、<code>driver_c</code>、<code>trans_c</code> …</td>
+      </tr>
+      <tr>
+        <td><b>何時存在</b></td>
+        <td>編譯期就決定，模擬全程都在，數量固定</td>
+        <td>執行期用 <code>create()</code> 生出來，可以生一千個，也可以中途丟掉</td>
+      </tr>
+      <tr>
+        <td><b>能碰訊號嗎</b></td>
+        <td>可以，直接接線</td>
+        <td><b>不行</b>，class 沒有「腳位」這種東西</td>
+      </tr>
+      <tr>
+        <td><b>能被 randomize 嗎</b></td>
+        <td>不行</td>
+        <td>可以，<code>rand</code> + <code>constraint</code></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>
+    Class 世界要驅動 DUT，唯一的通道就是 <code>interface</code>。
+    <code>interface</code> 本身住在 module 世界（<code>top</code> 裡實體化一份），
+    class 這邊拿到的是一個<strong>指向它的參照</strong>，型態叫 <code>virtual interface</code>。
+  </p>
+
+  <div class="code">
+    <div class="cap"><span>interface 與三個 modport</span><b>lab1-b / testbench/adder_intf.sv</b></div>
+<pre><code class="sv">interface adder_intf (input logic clk, input logic rst_n);
+  logic [6:0] in1;
+  logic [6:0] in2;
+  logic [7:0] out;
+
+  modport dut (input in1, input in2, output out);              // DUT：吃輸入、吐輸出
+
+  modport drv (output in1, output in2, input out,              // Driver：只能寫 in1/in2
+               input clk, input rst_n);
+
+  modport mon (input in1, input in2, input out,                // Monitor：純觀察，全 input
+               input clk, input rst_n);
+endinterface</code></pre>
+  </div>
+
+  <p>
+    <code>modport</code> 就是<strong>方向權限表</strong>。同一組線，三個人看到的方向不同：
+  </p>
+  <ul>
+    <li><code>modport dut</code>：<code>in1/in2</code> 是 input、<code>out</code> 是 output —— 站在 DUT 的角度。</li>
+    <li><code>modport drv</code>：<code>in1/in2</code> 變成 output —— Driver 是「寫的人」。</li>
+    <li><code>modport mon</code>：<strong>全部都是 input</strong> —— 這是刻意的。Monitor 只准看，
+      編譯器會擋住任何想寫訊號的程式碼，避免 monitor 不小心污染測試。</li>
+  </ul>
+
+  <div class="warn">
+    <p><b>初學者最常卡的地方：</b>Driver 宣告的型態不是 <code>virtual adder_intf</code>，
+    而是 <code>virtual adder_intf.drv</code>（帶 modport）。這個型態必須跟
+    <code>uvm_config_db#(...)</code> 傳遞時用的型態<strong>一字不差</strong>，
+    否則 <code>get()</code> 會回 false 然後 <code>UVM_FATAL</code>。詳見第 8 章。</p>
+  </div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section id="s3">
+  <h2 class="sec"><span class="num">03</span>架構全景圖</h2>
+
+  <p>
+    UVM 元件排成一棵樹。樹根是 <code>uvm_test_top</code>（<code>run_test("test")</code> 自動幫你建），
+    往下每一層都在自己的 <code>build_phase</code> 裡把小孩生出來。
+  </p>
+
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 900 470" role="img" aria-label="UVM 元件樹：test 底下是 env，env 底下是 agent、scoreboard、coverage，agent 底下是 driver、sequencer、monitor">
+      <!-- test -->
+      <rect class="s-box-a" x="350" y="16" width="200" height="46" rx="7"/>
+      <text class="s-t" x="450" y="32">test</text>
+      <text class="s-sub" x="450" y="49">uvm_test → uvm_test_top</text>
+
+      <line class="s-ln" x1="450" y1="62" x2="450" y2="96"/>
+
+      <!-- env -->
+      <rect class="s-box-b" x="350" y="96" width="200" height="46" rx="7"/>
+      <text class="s-t" x="450" y="112">env_c</text>
+      <text class="s-sub" x="450" y="129">uvm_env</text>
+
+      <!-- bus -->
+      <line class="s-ln" x1="450" y1="142" x2="450" y2="163"/>
+      <line class="s-ln" x1="215" y1="163" x2="775" y2="163"/>
+      <line class="s-ln" x1="215" y1="163" x2="215" y2="186"/>
+      <line class="s-ln" x1="555" y1="163" x2="555" y2="186"/>
+      <line class="s-ln" x1="775" y1="163" x2="775" y2="186"/>
+
+      <!-- agent -->
+      <rect class="s-box-g" x="20" y="186" width="390" height="46" rx="7"/>
+      <text class="s-t" x="215" y="202">agent_c</text>
+      <text class="s-sub" x="215" y="219">uvm_agent　is_active = UVM_ACTIVE / UVM_PASSIVE</text>
+
+      <!-- scoreboard -->
+      <rect class="s-box-p" x="460" y="186" width="190" height="46" rx="7"/>
+      <text class="s-t" x="555" y="202">scoreboard_c</text>
+      <text class="s-sub" x="555" y="219">uvm_scoreboard</text>
+
+      <!-- coverage -->
+      <rect class="s-box-p" x="680" y="186" width="190" height="46" rx="7"/>
+      <text class="s-t" x="775" y="202">cov_coll_c</text>
+      <text class="s-sub" x="775" y="219">uvm_subscriber #(trans_c)</text>
+
+      <!-- agent children bus -->
+      <line class="s-ln" x1="215" y1="232" x2="215" y2="256"/>
+      <line class="s-ln" x1="87"  y1="256" x2="347" y2="256"/>
+      <line class="s-ln" x1="87"  y1="256" x2="87"  y2="280"/>
+      <line class="s-ln" x1="215" y1="256" x2="215" y2="280"/>
+      <line class="s-ln" x1="347" y1="256" x2="347" y2="280"/>
+
+      <rect class="s-box" x="27" y="280" width="120" height="46" rx="7"/>
+      <text class="s-t" x="87" y="296">driver_c</text>
+      <text class="s-sub" x="87" y="313">uvm_driver</text>
+
+      <rect class="s-box" x="152" y="280" width="126" height="46" rx="7"/>
+      <text class="s-t" x="215" y="296">sequencer</text>
+      <text class="s-sub" x="215" y="313">uvm_sequencer</text>
+
+      <rect class="s-box" x="287" y="280" width="120" height="46" rx="7"/>
+      <text class="s-t" x="347" y="296">monitor_c</text>
+      <text class="s-sub" x="347" y="313">uvm_monitor</text>
+
+      <!-- boundary -->
+      <line class="s-dash" x1="20" y1="360" x2="880" y2="360"/>
+      <text class="s-lbl" x="742" y="348" style="fill:var(--accent)">↑ class 世界　　↓ module 世界</text>
+
+      <!-- module world -->
+      <rect class="s-box" x="27" y="386" width="380" height="44" rx="7"/>
+      <text class="s-t-mono" x="217" y="408">adder_intf intf (.clk, .rst_n)</text>
+
+      <rect class="s-box" x="460" y="386" width="190" height="44" rx="7"/>
+      <text class="s-t-mono" x="555" y="408">adder dut</text>
+
+      <rect class="s-box" x="680" y="386" width="190" height="44" rx="7"/>
+      <text class="s-t-mono" x="775" y="408">module top</text>
+
+      <!-- vif links -->
+      <path class="s-ar" d="M87,326 L87,386" marker-end="url(#a1)"/>
+      <path class="s-ar" d="M347,326 L347,386" marker-end="url(#a1)"/>
+      <text class="s-lbl" x="140" y="352" style="fill:var(--accent); font-family:var(--mono)">vif.drv</text>
+      <text class="s-lbl" x="398" y="352" style="fill:var(--accent); font-family:var(--mono)">vif.mon</text>
+
+      <path class="s-ar" d="M420,408 L455,408" marker-end="url(#a1)"/>
+
+      <defs>
+        <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+        </marker>
+      </defs>
+    </svg>
+    </div>
+    <figcaption>
+      元件樹（lab1-b 起就是這個形狀，一路用到 lab7）。虛線以上是 class、以下是 module；
+      <code>driver</code> 與 <code>monitor</code> 各自握著一份 virtual interface 才能跨過去。
+    </figcaption>
+  </figure>
+
+  <h3>每一層負責什麼</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>層</th><th>職責</th><th>可不可以換掉</th></tr></thead>
+    <tbody>
+      <tr><td><code>test</code></td><td>決定「這次要跑什麼」：跑幾筆、目標覆蓋率、要不要 override</td><td>每個測試情境一個 test，最常被換</td></tr>
+      <tr><td><code>env</code></td><td>把 agent / scoreboard / coverage 兜起來並接線</td><td>整包重用，換 DUT 才動</td></tr>
+      <tr><td><code>agent</code></td><td>一個協定介面的完整代理：產生 + 驅動 + 觀察</td><td>一種協定一個 agent（APB agent、AXI agent…）</td></tr>
+      <tr><td><code>sequencer</code></td><td>sequence 與 driver 之間的仲裁與排隊</td><td>幾乎不用自己寫，直接用 <code>uvm_sequencer#(T)</code></td></tr>
+      <tr><td><code>driver</code></td><td>把 transaction 翻譯成<b>訊號時序</b>（協定細節都在這）</td><td>換協定必改</td></tr>
+      <tr><td><code>monitor</code></td><td>把<b>訊號時序</b>翻回 transaction 並廣播出去</td><td>換協定必改</td></tr>
+      <tr><td><code>scoreboard</code></td><td>算預期值、和 DUT 實際輸出比對、統計 PASS/FAIL</td><td>換 DUT 功能必改（reference model）</td></tr>
+      <tr><td><code>coverage</code></td><td>採樣、統計「測到哪些情境」</td><td>換驗證目標就改</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note">
+    <p><b>Active vs Passive：</b><code>uvm_agent</code> 內建一個 <code>is_active</code> 欄位。
+    Active 時建 driver + sequencer + monitor；Passive 時<strong>只建 monitor</strong>（純觀察，不出刺激）。
+    lab6 就是在 agent 的 build/connect 裡加上這個判斷：</p>
+  </div>
+
+  <div class="code">
+    <div class="cap"><span>Active / Passive 判斷</span><b>lab6 / agent_c</b></div>
+<pre><code class="sv">virtual function void build_phase(uvm_phase phase);
+  super.build_phase(phase);
+  if (is_active == UVM_ACTIVE) begin              // 只有 Active 才需要出刺激
+    m_drv = driver_c::type_id::create("m_drv", this);
+    m_sqr = uvm_sequencer#(trans_c)::type_id::create("m_sqr", this);
+  end
+  m_mon = monitor_c::type_id::create("m_mon", this);   // Monitor 永遠要建
+endfunction
+
+virtual function void connect_phase(uvm_phase phase);
+  super.connect_phase(phase);
+  if (is_active == UVM_ACTIVE)
+    m_drv.seq_item_port.connect(m_sqr.seq_item_export);   // 沒建就別連，否則 null handle
+endfunction</code></pre>
+  </div>
+</section>
+
+<!-- ============ 4 ============ -->
+<section id="s4">
+  <h2 class="sec"><span class="num">04</span>Datapath：一筆資料走一遍</h2>
+
+  <p>
+    這是整份筆記的核心。下面追蹤<strong>一筆</strong> <code>trans_c</code>，
+    從被隨機生出來、被打到腳位上、DUT 算完、被觀察回來、到被比對，中間經過 8 站。
+  </p>
+
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 900 420" role="img" aria-label="UVM 資料流：sequence 產生 transaction，經 sequencer 到 driver，driver 透過 interface 驅動 DUT，monitor 從 interface 取樣後廣播給 scoreboard 與 coverage">
+      <!-- class world label -->
+      <text class="s-lbl" x="60" y="18" style="text-anchor:start">class 世界（物件在記憶體裡）</text>
+
+      <!-- 1 sequence -->
+      <rect class="s-box-g" x="20" y="40" width="122" height="48" rx="7"/>
+      <text class="s-t" x="81" y="57">sequence_c</text>
+      <text class="s-sub" x="81" y="74">body()</text>
+      <circle cx="20" cy="40" r="11" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text class="s-num" x="20" y="40">1</text>
+
+      <!-- 2 sequencer -->
+      <rect class="s-box" x="182" y="40" width="122" height="48" rx="7"/>
+      <text class="s-t" x="243" y="57">sequencer</text>
+      <text class="s-sub" x="243" y="74">仲裁/排隊</text>
+      <circle cx="182" cy="40" r="11" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text class="s-num" x="182" y="40">2</text>
+
+      <!-- 3 driver -->
+      <rect class="s-box-b" x="344" y="40" width="122" height="48" rx="7"/>
+      <text class="s-t" x="405" y="57">driver_c</text>
+      <text class="s-sub" x="405" y="74">run_phase</text>
+      <circle cx="344" cy="40" r="11" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text class="s-num" x="344" y="40">3</text>
+
+      <!-- 6 monitor -->
+      <rect class="s-box-b" x="556" y="40" width="122" height="48" rx="7"/>
+      <text class="s-t" x="617" y="57">monitor_c</text>
+      <text class="s-sub" x="617" y="74">run_phase</text>
+      <circle cx="556" cy="40" r="11" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text class="s-num" x="556" y="40">6</text>
+
+      <!-- 7 scoreboard / 8 coverage -->
+      <rect class="s-box-p" x="742" y="14" width="140" height="44" rx="7"/>
+      <text class="s-t" x="812" y="30">scoreboard_c</text>
+      <text class="s-sub" x="812" y="46">write() 比對</text>
+      <circle cx="742" cy="14" r="11" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text class="s-num" x="742" y="14">8</text>
+
+      <rect class="s-box-p" x="742" y="76" width="140" height="44" rx="7"/>
+      <text class="s-t" x="812" y="92">cov_coll_c</text>
+      <text class="s-sub" x="812" y="108">covgrp.sample()</text>
+
+      <!-- arrows -->
+      <path class="s-ar" d="M142,64 L178,64" marker-end="url(#a2)"/>
+      <text class="s-lbl" x="162" y="102" style="font-family:var(--mono); font-size:9.5px">finish_item</text>
+      <path class="s-ar" d="M304,64 L340,64" marker-end="url(#a2)"/>
+      <text class="s-lbl" x="322" y="102" style="font-family:var(--mono); font-size:9.5px">get_next_item</text>
+
+      <path class="s-ar" d="M678,64 L700,64 L700,36 L738,36" marker-end="url(#a2)"/>
+      <path class="s-ar" d="M700,64 L700,98 L738,98" marker-end="url(#a2)"/>
+      <text class="s-lbl" x="706" y="124" style="font-family:var(--mono); font-size:9.5px">m_mon_port.write()</text>
+      <circle cx="700" cy="152" r="11" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text class="s-num" x="700" y="152">7</text>
+
+      <!-- interface band -->
+      <rect x="20" y="252" width="862" height="34" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+      <text class="s-t-mono" x="451" y="269">adder_intf　　in1[6:0]　in2[6:0]　out[7:0]　clk　rst_n</text>
+
+      <line class="s-dash" x1="20" y1="222" x2="882" y2="222"/>
+      <text class="s-lbl" x="800" y="222" style="fill:var(--accent)">virtual interface 邊界</text>
+
+      <!-- driver down -->
+      <path class="s-ar" d="M405,88 L405,248" marker-end="url(#a2)"/>
+      <text class="s-lbl" x="470" y="150" style="font-family:var(--mono); font-size:10px">vif.in1 &lt;= tr.in1;</text>
+      <text class="s-lbl" x="470" y="166" style="font-family:var(--mono); font-size:10px">vif.in2 &lt;= tr.in2;</text>
+      <circle cx="405" cy="196" r="11" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text class="s-num" x="405" y="196">4</text>
+
+      <!-- monitor up -->
+      <path class="s-ar" d="M617,252 L617,92" marker-end="url(#a2)"/>
+      <text class="s-lbl" x="680" y="180" style="font-family:var(--mono); font-size:10px">取樣 in1/in2/out</text>
+
+      <!-- DUT -->
+      <rect class="s-box" x="360" y="330" width="180" height="52" rx="7"/>
+      <text class="s-t" x="450" y="347">adder (DUT)</text>
+      <text class="s-sub" x="450" y="365">out &lt;= in1 + in2 （下一拍）</text>
+      <circle cx="360" cy="330" r="11" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text class="s-num" x="360" y="330">5</text>
+
+      <path class="s-ar" d="M400,286 L400,326" marker-end="url(#a2)"/>
+      <path class="s-ar" d="M500,326 L500,290" marker-end="url(#a2)"/>
+      <text class="s-lbl" x="360" y="308" style="font-family:var(--mono); font-size:10px">in</text>
+      <text class="s-lbl" x="540" y="308" style="font-family:var(--mono); font-size:10px">out</text>
+
+      <text class="s-lbl" x="120" y="356" style="text-anchor:start">module 世界（實際的線）</text>
+
+      <defs>
+        <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+        </marker>
+      </defs>
+    </svg>
+    </div>
+    <figcaption>一筆 transaction 的完整路徑。①②③ 是「物件在傳遞」，④⑤⑥ 是「訊號在跑」，⑦⑧ 又回到物件。</figcaption>
+  </figure>
+
+  <h3>逐站說明：資料此刻在哪、是什麼型態</h3>
+
+  <div class="tbl">
+  <table>
+    <thead><tr><th>站</th><th>發生什麼</th><th>資料此刻的身分</th></tr></thead>
+    <tbody>
+      <tr><td><b>①</b> sequence</td>
+        <td><code>create()</code> 生一個 <code>trans_c</code>，<code>randomize()</code> 灌入 <code>in1/in2</code></td>
+        <td><code>trans_c</code> 物件，只有輸入欄位有效，<code>out</code> 還是無意義</td></tr>
+      <tr><td><b>②</b> sequencer</td>
+        <td><code>finish_item()</code> 把物件交給 sequencer，若 driver 還在忙就<b>擋在這裡等</b></td>
+        <td>同一個物件的 handle 被傳遞（沒有複製）</td></tr>
+      <tr><td><b>③</b> driver</td>
+        <td><code>seq_item_port.get_next_item(m_trans)</code> 拿到 handle</td>
+        <td>同一個物件，driver 現在可以讀它的欄位</td></tr>
+      <tr><td><b>④</b> 跨界</td>
+        <td><code>@(posedge clk)</code> 後 <code>vif.in1 &lt;= m_trans.in1;</code></td>
+        <td><b>物件 → 訊號</b>。從這裡開始資料變成 <code>logic</code> 電平</td></tr>
+      <tr><td><b>⑤</b> DUT</td>
+        <td><code>always_ff</code> 在下一個 posedge 把 <code>in1+in2</code> 寫進 <code>out</code></td>
+        <td>純訊號，<b>有 1 個 cycle 的延遲</b></td></tr>
+      <tr><td><b>⑥</b> monitor</td>
+        <td>先記住這拍的 <code>in1/in2</code>，等下一拍才讀 <code>out</code>，湊成完整一筆</td>
+        <td><b>訊號 → 物件</b>。<code>create()</code> 出一個<b>全新</b>的 <code>trans_c</code></td></tr>
+      <tr><td><b>⑦</b> 廣播</td>
+        <td><code>m_mon_port.write(m_trans)</code> 一次送給所有訂閱者</td>
+        <td>同一個物件 handle 被送給 N 個接收端</td></tr>
+      <tr><td><b>⑧</b> 檢查</td>
+        <td>scoreboard 算 <code>expected = in1+in2</code> 比對；coverage 採樣</td>
+        <td>物件被讀完就沒人再用，交給 GC</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Driver：轉換的一半</h3>
+  <div class="code">
+    <div class="cap"><span>從 sequencer 拿 item、驅動腳位、回報完成</span><b>lab3 / driver_c</b></div>
+<pre><code class="sv">virtual task run_phase(uvm_phase phase);
+  trans_c m_trans;
+
+  adder_vif.in1 &lt;= '0;                    // reset 期間先把訊號歸零
+  adder_vif.in2 &lt;= '0;
+  wait (adder_vif.rst_n === 1'b1);        // 等 reset 放開才開始工作
+
+  forever begin
+    seq_item_port.get_next_item(m_trans);       // ← 阻塞：沒東西就在這等
+    @(posedge adder_vif.clk);                   //   對齊時脈
+    adder_vif.in1 &lt;= m_trans.in1;               //   非阻塞賦值，避免 race
+    adder_vif.in2 &lt;= m_trans.in2;
+    `uvm_info("DRV", $sformatf("Drive in1=%0d, in2=%0d",
+              m_trans.in1, m_trans.in2), UVM_LOW)
+    seq_item_port.item_done();                  // ← 告訴 sequencer：這筆做完了
+  end
+endtask</code></pre>
+  </div>
+
+  <div class="warn">
+    <p><b><code>get_next_item()</code> 和 <code>item_done()</code> 必須成對。</b>
+    少了 <code>item_done()</code>，sequencer 會認為 driver 永遠沒做完，
+    第二筆 transaction 就再也送不出來，模擬看起來像卡死。</p>
+  </div>
+
+  <h3>Monitor：轉換的另一半（也是最容易寫錯時序的地方）</h3>
+  <div class="code">
+    <div class="cap"><span>對付 1-cycle latency 與 NBA race</span><b>lab1-b / monitor_c</b></div>
+<pre><code class="sv">virtual task run_phase(uvm_phase phase);
+  trans_c m_trans;
+  logic [6:0] in1_q, in2_q;      // 暫存這一拍的輸入
+  int idx = 0;
+
+  wait (adder_vif.rst_n === 1'b1);
+  @(posedge adder_vif.clk);
+    #1;                          // ★ 讓 NBA 區更新完再讀，避開取樣 race
+
+  forever begin
+    in1_q = adder_vif.in1;       // cycle N：記住輸入
+    in2_q = adder_vif.in2;
+    @(posedge adder_vif.clk);
+    #1;
+    m_trans = trans_c::type_id::create($sformatf("mon_trans_%0d", idx++), this);
+    m_trans.in1 = in1_q;         // cycle N 的輸入
+    m_trans.in2 = in2_q;
+    m_trans.out = adder_vif.out; // cycle N+1 的輸出 ← 這才是同一筆交易
+    m_mon_port.write(m_trans);   // 廣播
+  end
+endtask</code></pre>
+  </div>
+
+  <div class="note">
+    <p><b>為什麼要 <code>#1</code>？</b>
+    DUT 用 <code>always_ff</code> 加非阻塞賦值 <code>&lt;=</code> 更新 <code>out</code>，
+    這個更新發生在同一個時間點的 <b>NBA 區</b>。如果 monitor 在 <code>@(posedge clk)</code>
+    醒來就立刻讀，可能讀到「更新前」的舊值，而且每次執行順序不保證一樣（race）。
+    補一個 <code>#1</code>（或改用 clocking block）就能確保讀到穩定值。</p>
+    <p><b>為什麼要暫存 <code>in1_q/in2_q</code>？</b>
+    因為 DUT 有 1 cycle latency：<code>in1/in2</code> 在 cycle N，對應的 <code>out</code> 在 cycle N+1。
+    如果同一拍把 in 跟 out 一起抓，就是把「這一筆的輸入」配上「上一筆的輸出」，scoreboard 會全紅。</p>
+  </div>
+</section>
+
+<!-- ============ 5 ============ -->
+<section id="s5">
+  <h2 class="sec"><span class="num">05</span>資料型態總覽</h2>
+
+  <h3>兩大家族：uvm_object vs uvm_component</h3>
+  <p>UVM 所有 class 都從 <code>uvm_object</code> 長出來，但很早就分成兩支，行為完全不同：</p>
+
+  <div class="tbl">
+  <table>
+    <thead><tr><th>　</th><th><code>uvm_object</code> 家族<span class="tag tag-obj">資料</span></th><th><code>uvm_component</code> 家族<span class="tag tag-cmp">結構</span></th></tr></thead>
+    <tbody>
+      <tr><td><b>代表</b></td>
+        <td><code>uvm_sequence_item</code>（transaction）<br><code>uvm_sequence</code></td>
+        <td><code>uvm_driver</code>、<code>uvm_monitor</code>、<code>uvm_scoreboard</code>、<code>uvm_subscriber</code>、<code>uvm_agent</code>、<code>uvm_env</code>、<code>uvm_test</code>、<code>uvm_sequencer</code></td></tr>
+      <tr><td><b>有沒有位置</b></td>
+        <td>沒有。像一封信，可以到處傳、複製、丟掉</td>
+        <td>有。在元件樹上有固定路徑，例如 <code>uvm_test_top.m_env.m_agt.m_drv</code></td></tr>
+      <tr><td><b>生命週期</b></td><td>短。一筆交易一個，用完就回收</td><td>長。<code>build_phase</code> 建好後模擬全程存在</td></tr>
+      <tr><td><b>建構子</b></td>
+        <td><code>function new(string name = "");</code><br>只有一個參數</td>
+        <td><code>function new(string name, uvm_component parent);</code><br><b>多一個 parent</b></td></tr>
+      <tr><td><b>註冊巨集</b></td>
+        <td><code>`uvm_object_utils(T)</code><br>或 <code>`uvm_object_utils_begin/end</code></td>
+        <td><code>`uvm_component_utils(T)</code></td></tr>
+      <tr><td><b>有 phase 嗎</b></td><td>沒有</td><td>有：build / connect / run / report / final …</td></tr>
+      <tr><td><b>能被 randomize</b></td><td>可以（<code>rand</code> + <code>constraint</code>）</td><td>不會這樣用</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="warn">
+    <p><b>用錯巨集的症狀：</b>在 transaction 上寫 <code>`uvm_component_utils</code>，
+    或在 component 上寫 <code>`uvm_object_utils</code>，編譯就會炸在建構子簽章對不上
+    （因為巨集會展開出對應家族的 <code>create()</code> 實作）。看到一堆奇怪的
+    <code>new()</code> 相關錯誤，先回頭確認這兩個巨集有沒有配對。</p>
+  </div>
+
+  <h3>Transaction：資料的容器</h3>
+  <div class="code">
+    <div class="cap"><span>典型 transaction</span><b>lab1-b ~ lab7 / trans_c</b></div>
+<pre><code class="sv">class trans_c extends uvm_sequence_item;
+  rand logic [6:0] in1;        // rand：randomize() 時會被灌值
+  rand logic [6:0] in2;
+       logic [7:0] out;        // 沒有 rand：這是 DUT 給的，不是我們產生的
+
+  function new(string name = "");
+    super.new(name);
+  endfunction
+
+  `uvm_object_utils_begin(trans_c)      // begin/end 版本才能塞 field macro
+    `uvm_field_int(in1, UVM_DEFAULT)
+    `uvm_field_int(in2, UVM_DEFAULT)
+    `uvm_field_int(out, UVM_DEFAULT)
+  `uvm_object_utils_end
+endclass</code></pre>
+  </div>
+
+  <p>三個設計決定值得注意：</p>
+  <ul>
+    <li><b><code>out</code> 沒有 <code>rand</code></b>：輸出是「觀察到的結果」不是「我們決定的刺激」。
+      加了 <code>rand</code> 會讓 randomize 亂改它，反而蓋掉 monitor 抓回來的值。</li>
+    <li><b>位寬 <code>[6:0] + [6:0] → [7:0]</code></b>：兩個 7-bit 最大 127+127 = 254，
+      需要 8 bit 才裝得下。<b>刻意留一個 bit</b> 避免溢位，讓 scoreboard 的
+      <code>expected = in1 + in2</code> 跟 DUT 一致。如果 <code>out</code> 只給 7 bit，
+      兩邊都會截斷，測試「會過」但你就測不到進位了。</li>
+    <li><b><code>logic</code> 而不是 <code>bit</code></b>：<code>logic</code> 是四值（0/1/X/Z），
+      <code>bit</code> 是二值（0/1）。用 <code>logic</code> 才能看見「這條線根本沒被驅動」（X）
+      這種 bug；用 <code>bit</code> 的話未驅動會顯示成 0，bug 被藏起來。</li>
+  </ul>
+
+  <h4><code>`uvm_field_int</code> 換到什麼</h4>
+  <p>登記欄位之後，UVM 自動幫你生出這些方法，不用手寫：</p>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>方法</th><th>用途</th></tr></thead>
+    <tbody>
+      <tr><td><code>print()</code></td><td>印出整筆 transaction 的表格（debug 時很好用）</td></tr>
+      <tr><td><code>copy()</code> / <code>clone()</code></td><td>深拷貝一筆交易（要存進 queue 比對時必用）</td></tr>
+      <tr><td><code>compare()</code></td><td>兩筆逐欄位比對</td></tr>
+      <tr><td><code>sprint()</code> / <code>convert2string()</code></td><td>轉字串塞進 log</td></tr>
+      <tr><td><code>pack()</code> / <code>unpack()</code></td><td>攤平成 bit stream</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>參數化型別：角括號裡放的是什麼</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>寫法</th><th>參數意義</th><th>出處</th></tr></thead>
+    <tbody>
+      <tr><td><code>uvm_sequence #(trans_c)</code></td><td>這條 sequence 產生哪種 item</td><td>lab3</td></tr>
+      <tr><td><code>uvm_sequencer #(trans_c)</code></td><td>這台 sequencer 搬運哪種 item</td><td>lab1-b</td></tr>
+      <tr><td><code>uvm_driver #(trans_c)</code></td><td>這個 driver 收哪種 item（決定 <code>seq_item_port</code> 型態）</td><td>lab3</td></tr>
+      <tr><td><code>uvm_analysis_port #(trans_c)</code></td><td>這個發送埠廣播哪種 item</td><td>lab4</td></tr>
+      <tr><td><code>uvm_analysis_imp #(trans_c, scoreboard_c)</code></td><td><b>兩個</b>參數：收哪種 item ＋ <b>誰</b>來實作 <code>write()</code></td><td>lab5-a</td></tr>
+      <tr><td><code>uvm_subscriber #(trans_c)</code></td><td>內建一個 <code>analysis_export</code>，你只要 override <code>write()</code></td><td>lab6</td></tr>
+      <tr><td><code>uvm_tlm_analysis_fifo #(trans_c)</code></td><td>可暫存的接收端，用 <code>get()</code> 取</td><td>lab5-b</td></tr>
+      <tr><td><code>virtual adder_intf.drv</code></td><td>指向 interface 的參照，<b>帶 modport</b></td><td>lab1-b</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3><code>new()</code> vs <code>type_id::create()</code></h3>
+  <p>兩個都能生物件，但意義差很多：</p>
+  <div class="grid2">
+    <div class="mini">
+      <h4><code>obj = new("name")</code></h4>
+      <p>直接呼叫建構子。生出來的<b>一定</b>是你寫的那個 class，factory 攔不到。</p>
+      <p style="color:var(--fg-muted)">只在 TLM port/export/FIFO 這種「不需要被 override」的東西上用，例如
+      <code>m_mon_port = new("m_mon_port", this);</code></p>
+    </div>
+    <div class="mini">
+      <h4><code>obj = T::type_id::create("name", this)</code></h4>
+      <p>透過 factory 生。factory 會先查有沒有 override，有的話<b>換成別的 class</b>。</p>
+      <p style="color:var(--fg-muted)">所有 transaction、sequence、component 都該用這個。這是 lab7 能不改架構就換行為的前提。</p>
+    </div>
+  </div>
+
+  <div class="note">
+    <p><b>參數差異：</b><code>create()</code> 給 component 用時要傳 <code>this</code> 當 parent
+    （<code>create("m_drv", this)</code>）；給 object 用時通常不用
+    （<code>create("m_trans_0")</code>）—— 因為 object 沒有樹上的位置。</p>
+  </div>
+
+  <h3>SystemVerilog 面：幾個一定要分清楚的</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>寫法</th><th>意義</th><th>在 UVM 裡什麼時候用</th></tr></thead>
+    <tbody>
+      <tr><td><code>=</code>（阻塞）</td><td>立刻生效</td><td>class 內部運算、monitor 抓回來的值存進 transaction</td></tr>
+      <tr><td><code>&lt;=</code>（非阻塞）</td><td>排到 NBA 區才生效</td><td><b>driver 驅動訊號一律用這個</b>，避免和 DUT 的 <code>always_ff</code> 打架</td></tr>
+      <tr><td><code>==</code></td><td>邏輯比較，遇到 X/Z 回傳 X</td><td>盡量避開</td></tr>
+      <tr><td><code>===</code></td><td>四值全等，X 跟 X 算相等，結果一定是 0 或 1</td><td><b>scoreboard 比對、等 reset 一律用這個</b></td></tr>
+      <tr><td><code>wait (expr)</code></td><td>條件成立才往下（已成立就不等）</td><td><code>wait (vif.rst_n === 1'b1)</code></td></tr>
+      <tr><td><code>@(posedge clk)</code></td><td>一定要等到下一個上升緣</td><td>時序對齊</td></tr>
+      <tr><td><code>function</code></td><td><b>不能消耗時間</b></td><td>build/connect/report/write() 都是 function</td></tr>
+      <tr><td><code>task</code></td><td>可以消耗時間</td><td><code>run_phase</code>、<code>main_phase</code>、sequence 的 <code>body()</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ============ 6 ============ -->
+<section id="s6">
+  <h2 class="sec"><span class="num">06</span>Phase 機制：誰先跑、誰後跑</h2>
+
+  <p>
+    UVM 幫你排好了一條固定的流程。你不用自己呼叫，只要<strong>覆寫（override）</strong>你想插手的那一段，
+    UVM 會在對的時間點自動叫它。
+  </p>
+
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 640 430" role="img" aria-label="UVM phase 執行順序：build、connect、end_of_elaboration、start_of_simulation、run/main、extract check report、final">
+      <line class="s-ln" x1="46" y1="24" x2="46" y2="392" stroke-width="2"/>
+
+      <!-- 1 build -->
+      <circle cx="46" cy="34" r="7" fill="var(--green)" stroke="none"/>
+      <text class="s-t-mono" x="70" y="30" style="text-anchor:start; font-size:13px">build_phase</text>
+      <text class="s-sub" x="70" y="48" style="text-anchor:start">function · top-down · 用 create() 生小孩、config_db::get()</text>
+
+      <!-- 2 connect -->
+      <circle cx="46" cy="94" r="7" fill="var(--green)" stroke="none"/>
+      <text class="s-t-mono" x="70" y="90" style="text-anchor:start; font-size:13px">connect_phase</text>
+      <text class="s-sub" x="70" y="108" style="text-anchor:start">function · bottom-up · 接 TLM、接 seq_item_port</text>
+
+      <!-- 3 eoe -->
+      <circle cx="46" cy="154" r="7" fill="var(--green)" stroke="none"/>
+      <text class="s-t-mono" x="70" y="150" style="text-anchor:start; font-size:13px">end_of_elaboration_phase</text>
+      <text class="s-sub" x="70" y="168" style="text-anchor:start">function · 樹已定型，最後檢查的機會</text>
+
+      <!-- 4 sos -->
+      <circle cx="46" cy="214" r="7" fill="var(--green)" stroke="none"/>
+      <text class="s-t-mono" x="70" y="210" style="text-anchor:start; font-size:13px">start_of_simulation_phase</text>
+      <text class="s-sub" x="70" y="228" style="text-anchor:start">function · 常在這裡 uvm_root::get().print_topology()</text>
+
+      <!-- 5 run -->
+      <rect x="26" y="252" width="588" height="72" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
+      <circle cx="46" cy="270" r="7" fill="var(--accent)" stroke="none"/>
+      <text class="s-t-mono" x="70" y="266" style="text-anchor:start; font-size:13px; fill:var(--accent)">run_phase / main_phase　★ 唯一會消耗模擬時間的階段</text>
+      <text class="s-sub" x="70" y="286" style="text-anchor:start">task · 所有 component 的 run_phase 同時 fork 執行</text>
+      <text class="s-sub" x="70" y="304" style="text-anchor:start">objection 全部 drop 光了，這個階段才結束</text>
+
+      <!-- 6 report -->
+      <circle cx="46" cy="348" r="7" fill="var(--green)" stroke="none"/>
+      <text class="s-t-mono" x="70" y="344" style="text-anchor:start; font-size:13px">extract / check / report_phase</text>
+      <text class="s-sub" x="70" y="362" style="text-anchor:start">function · bottom-up · 印 PASS/FAIL 統計、coverage 數字</text>
+
+      <!-- 7 final -->
+      <circle cx="46" cy="392" r="7" fill="var(--green)" stroke="none"/>
+      <text class="s-t-mono" x="70" y="392" style="text-anchor:start; font-size:13px">final_phase</text>
+
+      <text class="s-lbl" x="18" y="200" transform="rotate(-90 18 200)" style="fill:var(--fg-faint)">時間 →</text>
+    </svg>
+    </div>
+    <figcaption>Phase 順序（lab2 就是把每個 phase 加上 <code>`uvm_info</code> marker，直接從 log 上看這個順序）。</figcaption>
+  </figure>
+
+  <h3>兩條要背起來的規則</h3>
+
+  <div class="grid2">
+    <div class="mini">
+      <h4>規則一：function phase 不能延遲</h4>
+      <p><code>build_phase</code>、<code>connect_phase</code>、<code>report_phase</code>… 全是
+      <code>function void</code>。裡面放 <code>#10</code> 或 <code>@(posedge clk)</code>
+      會直接報 <code>Illegal time-consuming statement</code>。</p>
+      <p style="color:var(--fg-muted)">要等時間，只能寫在 <code>run_phase</code> / <code>main_phase</code>（task）。</p>
+    </div>
+    <div class="mini">
+      <h4>規則二：build 由上往下、connect 由下往上</h4>
+      <p><code>build_phase</code> 是 top-down：先建 test，test 建 env，env 建 agent…
+      因為要先有 parent 才能建 child。</p>
+      <p style="color:var(--fg-muted)"><code>connect_phase</code> 反過來 bottom-up：
+      要先確定小孩都存在了，才連得起來。</p>
+    </div>
+  </div>
+
+  <h3>Objection：決定模擬什麼時候結束</h3>
+  <p>
+    UVM 不知道你的測試要跑多久。<strong>Objection 就是一個計數器</strong>：
+    只要還有人「舉手反對結束」，run phase 就不會停；歸零的瞬間，UVM 收工。
+  </p>
+
+  <div class="code">
+    <div class="cap"><span>用 objection 圈出「還在做事」的區間</span><b>lab1-b, lab2 / test::main_phase</b></div>
+<pre><code class="sv">virtual task main_phase(uvm_phase phase);
+  sequence_c m_seq;
+  int iter = 0;
+
+  phase.raise_objection(this);            // ← 舉手：別結束
+
+  // 一直送 sequence，直到覆蓋率達標或跑滿次數
+  while (m_env.m_cov.covgrp.get_coverage() &lt; cov_target &amp;&amp; iter &lt; max_iter) begin
+    m_seq = sequence_c::type_id::create($sformatf("seq_%0d", iter), this);
+    m_seq.start(m_env.m_agt.m_sqr);       // ← 把 sequence 掛到 sequencer 上跑
+    iter++;
+  end
+
+  phase.phase_done.set_drain_time(this, 20ns);   // 多留 20ns 給管線裡的殘料流完
+
+  phase.drop_objection(this);             // ← 放手：可以收工了
+endtask</code></pre>
+  </div>
+
+  <div class="warn">
+    <p><b>忘了 <code>raise_objection</code> 的症狀：</b>模擬在 0ns 就結束，
+    log 幾乎是空的，只有 UVM 的 header 跟 report summary。看起來像「編譯壞了」，
+    其實是「沒人反對，UVM 就直接收工了」。</p>
+    <p><b><code>set_drain_time</code> 在幹嘛：</b>最後一筆刺激打進 DUT 後，
+    DUT 還要幾拍才吐得出結果。如果 objection 一 drop 就立刻停，
+    最後幾筆的 <code>out</code> 就永遠等不到，monitor 少抓、scoreboard 少比。
+    留一段 drain time 讓管線排空。</p>
+  </div>
+
+  <div class="note">
+    <p><b><code>run_phase</code> 和 <code>main_phase</code> 有什麼不同？</b>
+    <code>run_phase</code> 是總開關；UVM 另外把它切成 12 個 sub-phase：
+    <code>pre_reset → reset → post_reset → pre_configure → configure → post_configure
+    → pre_main → main → post_main → pre_shutdown → shutdown → post_shutdown</code>，
+    它們跟 <code>run_phase</code> <b>並行</b>。這幾個 Lab 的慣例是：
+    driver / monitor 這種「一直跑的」寫在 <code>run_phase</code>，
+    test 裡「有開始有結束的測試流程」寫在 <code>main_phase</code>。</p>
+  </div>
+</section>
+
+<!-- ============ 7 ============ -->
+<section id="s7">
+  <h2 class="sec"><span class="num">07</span>TLM：元件之間怎麼連</h2>
+
+  <p>
+    UVM 元件之間<strong>不直接呼叫對方的方法</strong>，而是透過 TLM port 連接。
+    好處是 monitor 不需要知道有誰在聽 —— 你今天多掛一個 coverage collector，monitor 一行都不用改。
+  </p>
+
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 900 300" role="img" aria-label="TLM 三種接法：analysis_port 接 analysis_imp、接 subscriber 的 analysis_export、接 tlm_analysis_fifo">
+      <!-- A -->
+      <rect x="12" y="16" width="282" height="266" rx="9" fill="none" stroke="var(--line)" stroke-width="1.2"/>
+      <text class="s-t" x="153" y="40" style="font-weight:600">A · analysis_imp</text>
+      <rect class="s-box-b" x="36" y="66" width="110" height="42" rx="6"/>
+      <text class="s-t-mono" x="91" y="87">monitor</text>
+      <rect class="s-box-p" x="162" y="66" width="110" height="42" rx="6"/>
+      <text class="s-t-mono" x="217" y="87">scoreboard</text>
+      <path class="s-ar" d="M148,87 L158,87" marker-end="url(#a3)"/>
+      <text class="s-sub" x="153" y="130">m_mon_port.connect(m_scr_imp)</text>
+      <text class="s-sub" x="153" y="160" style="fill:var(--fg)">scoreboard 自己實作 write()</text>
+      <text class="s-sub" x="153" y="180">monitor 一 write()，立刻同步執行</text>
+      <text class="s-sub" x="153" y="212" style="fill:var(--green)">適合：輸出立即可比對</text>
+      <text class="s-sub" x="153" y="232">uvm_analysis_imp #(trans_c, scoreboard_c)</text>
+      <text class="s-sub" x="153" y="262" style="fill:var(--fg-faint)">lab5-a</text>
+
+      <!-- B -->
+      <rect x="309" y="16" width="282" height="266" rx="9" fill="none" stroke="var(--line)" stroke-width="1.2"/>
+      <text class="s-t" x="450" y="40" style="font-weight:600">B · uvm_subscriber</text>
+      <rect class="s-box-b" x="333" y="66" width="110" height="42" rx="6"/>
+      <text class="s-t-mono" x="388" y="87">monitor</text>
+      <rect class="s-box-p" x="459" y="66" width="110" height="42" rx="6"/>
+      <text class="s-t-mono" x="514" y="87">cov_coll</text>
+      <path class="s-ar" d="M445,87 L455,87" marker-end="url(#a3)"/>
+      <text class="s-sub" x="450" y="130">m_mon_port.connect(m_cov.analysis_export)</text>
+      <text class="s-sub" x="450" y="160" style="fill:var(--fg)">內建 analysis_export，不用自己 new</text>
+      <text class="s-sub" x="450" y="180">只要 override write()</text>
+      <text class="s-sub" x="450" y="212" style="fill:var(--green)">適合：coverage、log recorder</text>
+      <text class="s-sub" x="450" y="232">uvm_subscriber #(trans_c)</text>
+      <text class="s-sub" x="450" y="262" style="fill:var(--fg-faint)">lab6</text>
+
+      <!-- C -->
+      <rect x="606" y="16" width="282" height="266" rx="9" fill="none" stroke="var(--line)" stroke-width="1.2"/>
+      <text class="s-t" x="747" y="40" style="font-weight:600">C · analysis_fifo</text>
+      <rect class="s-box-b" x="620" y="66" width="82" height="42" rx="6"/>
+      <text class="s-t-mono" x="661" y="87" style="font-size:11px">driver/mon</text>
+      <rect class="s-box-a" x="714" y="66" width="60" height="42" rx="6"/>
+      <text class="s-t-mono" x="744" y="87" style="font-size:11px">FIFO</text>
+      <rect class="s-box-p" x="786" y="66" width="88" height="42" rx="6"/>
+      <text class="s-t-mono" x="830" y="87" style="font-size:11px">scoreboard</text>
+      <path class="s-ar" d="M704,87 L710,87" marker-end="url(#a3)"/>
+      <path class="s-ar" d="M776,87 L782,87" marker-end="url(#a3)"/>
+      <text class="s-sub" x="747" y="130">connect(m_scr.drv_fifo.analysis_export)</text>
+      <text class="s-sub" x="747" y="160" style="fill:var(--fg)">write() 先存進 FIFO（不會擋住）</text>
+      <text class="s-sub" x="747" y="180">scoreboard 在 run_phase 用 get() 取</text>
+      <text class="s-sub" x="747" y="212" style="fill:var(--green)">適合：pipeline / 有 latency 的 DUT</text>
+      <text class="s-sub" x="747" y="232">uvm_tlm_analysis_fifo #(trans_c)</text>
+      <text class="s-sub" x="747" y="262" style="fill:var(--fg-faint)">lab5-b</text>
+
+      <defs>
+        <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+        </marker>
+      </defs>
+    </svg>
+    </div>
+    <figcaption>三種接收端寫法。共同點：發送端都是 <code>uvm_analysis_port #(trans_c)</code>，
+    連線方向永遠是 <b>port.connect(export/imp)</b>。</figcaption>
+  </figure>
+
+  <h3>連線都寫在 connect_phase</h3>
+  <div class="code">
+    <div class="cap"><span>一個 port 廣播給兩個接收端</span><b>lab4, lab6 / env_c</b></div>
+<pre><code class="sv">virtual function void connect_phase(uvm_phase phase);
+  super.connect_phase(phase);
+  m_agt.m_mon.m_mon_port.connect(m_scr.m_scr_imp);          // → scoreboard
+  m_agt.m_mon.m_mon_port.connect(m_cov.analysis_export);    // → coverage
+endfunction</code></pre>
+  </div>
+
+  <p>
+    <code>uvm_analysis_port</code> 是<strong>一對多</strong>的：
+    connect 幾次就有幾個訂閱者，<code>write()</code> 呼叫一次，所有訂閱者的
+    <code>write()</code> 都會被依序執行。而且 <code>write()</code> 是 <code>function</code>，
+    <strong>不消耗時間</strong>，所以廣播是「瞬間完成」的。
+  </p>
+
+  <h3>架構 A（imp）vs 架構 C（FIFO）差在哪</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>　</th><th>A：analysis_imp（lab5-a）</th><th>C：analysis_fifo（lab5-b）</th></tr></thead>
+    <tbody>
+      <tr><td><b>資料來源</b></td><td>只有 monitor 一路，同一筆裡就有 in 和 out</td><td>兩路：driver 送「輸入」、monitor 送「輸出」</td></tr>
+      <tr><td><b>比對時機</b></td><td><code>write()</code> 被呼叫的當下立刻比</td><td><code>run_phase</code> 裡 <code>get()</code> 到兩邊資料才比</td></tr>
+      <tr><td><b>寫在哪</b></td><td><code>virtual function void write(trans_c t)</code></td><td><code>virtual task run_phase(...)</code>（要能 blocking）</td></tr>
+      <tr><td><b>要多做的事</b></td><td>無</td><td>driver 要多開一個 <code>uvm_analysis_port</code>，在 <code>item_done()</code> 前 <code>write()</code></td></tr>
+      <tr><td><b>什麼時候該用</b></td><td>DUT 簡單、monitor 能一次抓齊 in/out</td><td>DUT 有深管線、亂序、或 in/out 相隔很多拍</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="code">
+    <div class="cap"><span>FIFO 版 scoreboard 的核心</span><b>lab5-b / scoreboard_c</b></div>
+<pre><code class="sv">uvm_tlm_analysis_fifo #(trans_c) drv_fifo;   // 存 driver 送來的「輸入」
+uvm_tlm_analysis_fifo #(trans_c) mon_fifo;   // 存 monitor 送來的「輸出」
+
+virtual task run_phase(uvm_phase phase);
+  trans_c drv_tr, mon_tr;
+  logic [7:0] expected;
+
+  forever begin
+    drv_fifo.get(drv_tr);                 // blocking：沒資料就在這等
+    mon_fifo.get(mon_tr);                 // 兩邊各取一筆，自動配對
+    expected = reference_model(drv_tr);   // expected = drv_tr.in1 + drv_tr.in2
+
+    if (mon_tr.out === expected) pass_cnt++;
+    else `uvm_error("SCR", $sformatf("FAIL: expected %0d, got %0d", expected, mon_tr.out))
+  end
+endtask</code></pre>
+  </div>
+
+  <div class="note">
+    <p><b>注意 <code>get()</code> 是 task 不是 function。</b>
+    它會 blocking 等到 FIFO 裡有東西，所以只能寫在 <code>run_phase</code> 裡。
+    這就是為什麼 FIFO 版的 scoreboard 沒有 <code>write()</code> —— 換成 <code>run_phase</code> 了。</p>
+  </div>
+</section>
+
+<!-- ============ 8 ============ -->
+<section id="s8">
+  <h2 class="sec"><span class="num">08</span>config_db：把東西從外面遞進來</h2>
+
+  <p>
+    Driver 需要 virtual interface，但 interface 住在 <code>module top</code> 裡。
+    Driver 是被 factory 生出來的，沒辦法在建構子裡把 interface 傳進去。
+    <code>uvm_config_db</code> 就是解這個問題的<strong>全域字典</strong>：一邊 <code>set</code>，另一邊 <code>get</code>。
+  </p>
+
+  <div class="code">
+    <div class="cap"><span>set 端：在 top 裡，run_test() 之前</span><b>lab1-b, lab4 / module top</b></div>
+<pre><code class="sv">initial begin
+  uvm_config_db#(virtual adder_intf.drv)::set(null,
+      "uvm_test_top.m_env.m_agt.m_drv", "adder_vif", intf);
+
+  uvm_config_db#(virtual adder_intf.mon)::set(null,
+      "uvm_test_top.m_env.m_agt.m_mon", "adder_vif", intf);
+
+  run_test("test");        // set 一定要在 run_test 之前
+end</code></pre>
+  </div>
+
+  <div class="code">
+    <div class="cap"><span>get 端：在 build_phase 裡</span><b>lab4 / driver_c</b></div>
+<pre><code class="sv">virtual adder_intf.drv adder_vif;          // 型態要跟 set 端一模一樣
+
+virtual function void build_phase(uvm_phase phase);
+  super.build_phase(phase);
+  if (!uvm_config_db#(virtual adder_intf.drv)::get(this, "", "adder_vif", adder_vif))
+    `uvm_fatal("DRV", "Unable to get interface adder_vif (drv)")
+endfunction</code></pre>
+  </div>
+
+  <h3>四個參數逐一拆解</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>位置</th><th>set 端</th><th>get 端</th><th>說明</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><code>null</code></td><td><code>this</code></td>
+        <td>起點 context。<code>null</code> = 從 <code>uvm_root</code> 起算（因為 module 不在元件樹上）</td></tr>
+      <tr><td>2</td><td><code>"uvm_test_top.m_env.m_agt.m_drv"</code></td><td><code>""</code></td>
+        <td>相對於 context 的路徑。get 端已經傳 <code>this</code>，所以路徑留空表示「就是我自己」</td></tr>
+      <tr><td>3</td><td><code>"adder_vif"</code></td><td><code>"adder_vif"</code></td>
+        <td><b>欄位名</b>（字串 key），兩邊必須一字不差</td></tr>
+      <tr><td>4</td><td><code>intf</code></td><td><code>adder_vif</code></td>
+        <td>set 是「要存的值」，get 是「存進哪個變數」（傳參考）</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="warn">
+    <p><b>三種讓 <code>get()</code> 失敗的錯法，症狀都一樣是 <code>UVM_FATAL</code>：</b></p>
+    <ol style="margin-bottom:0">
+      <li><b>型態不一致</b> —— set 用 <code>virtual adder_intf</code>、get 用
+        <code>virtual adder_intf.drv</code>。這在 <code>uvm_config_db</code> 眼裡是<b>兩個完全不同的字典</b>，
+        存進 A 抽不出 B。這是最常見也最難看出來的一種。</li>
+      <li><b>路徑打錯</b> —— 例如 <code>m_agt</code> 打成 <code>m_agent</code>，
+        或忘了最前面的 <code>uvm_test_top.</code>（<code>run_test()</code> 建的 test 實體名固定叫這個）。</li>
+      <li><b>key 打錯</b> —— <code>"adder_vif"</code> 打成 <code>"adder_intf"</code>。</li>
+    </ol>
+  </div>
+
+  <div class="note">
+    <p><b>為什麼 set 兩次？</b>因為 driver 和 monitor 要的 modport 不同
+    （<code>.drv</code> 可寫、<code>.mon</code> 唯讀），型態不同就得各存一份。
+    這也是 lab1-b 註解裡特別標星號的重點。</p>
+    <p><b>路徑可以用萬用字元。</b><code>"*"</code> 代表任意層，例如
+    <code>set(null, "*", "adder_vif", intf)</code> 讓所有元件都拿得到 ——
+    快速但危險，會讓 monitor 也拿到可寫的 handle。</p>
+  </div>
+</section>
+
+<!-- ============ 9 ============ -->
+<section id="s9">
+  <h2 class="sec"><span class="num">09</span>Factory 與 Override</h2>
+
+  <p>
+    Factory 是「用字串換出物件」的登記處。它存在的理由只有一個：
+    <strong>讓你不改任何既有程式碼，就能把系統裡某個 class 全面換成另一個</strong>。
+  </p>
+
+  <h3>三個步驟</h3>
+  <ol>
+    <li><b>註冊</b> —— <code>`uvm_object_utils(T)</code> / <code>`uvm_component_utils(T)</code>。
+      沒註冊的 class，factory 根本不知道它存在。</li>
+    <li><b>用 <code>create()</code> 生</b> —— 而不是 <code>new()</code>。這是攔截點。</li>
+    <li><b>設 override</b> —— 在任何 <code>create()</code> 發生<b>之前</b>。</li>
+  </ol>
+
+  <div class="code">
+    <div class="cap"><span>不改架構，把全系統的 trans_c 換成受限版</span><b>lab7</b></div>
+<pre><code class="sv">// (1) 繼承出一個新的 transaction，加一條約束
+class trans_in1_3_c extends trans_c;
+  `uvm_object_utils(trans_in1_3_c)          // ★ 一定要註冊，否則 override 不生效
+
+  function new(string name = "");
+    super.new(name);
+  endfunction
+
+  constraint in1_eq_3 { in1 == 3; }         // 把 in1 釘死成 3
+endclass
+
+// (2) 在 test 的 build_phase 最前面設 override
+virtual function void build_phase(uvm_phase phase);
+  set_type_override_by_type(
+    trans_c::get_type(),                    // 原本要生的
+    trans_in1_3_c::get_type()               // 實際生出來的
+  );
+
+  super.build_phase(phase);                 // ← override 必須在這行之前
+  m_env = env_c::type_id::create("m_env", this);
+
+  uvm_factory::get().print();               // (3) 印出 Type Overrides 表驗證
+endfunction</code></pre>
+  </div>
+
+  <p>
+    設完之後，<code>sequence_c</code> 裡那行 <code>trans_c::type_id::create(...)</code>
+    <strong>一個字都沒改</strong>，但生出來的已經是 <code>trans_in1_3_c</code>。
+    Log 裡每筆 <code>in1</code> 都變成 3，scoreboard 依然全 PASS
+    （功能沒壞），但 <code>cp1</code> 的覆蓋率掉到只剩一個 bin。
+  </p>
+
+  <div class="warn">
+    <p><b>Override 失效的兩個原因：</b></p>
+    <ol style="margin-bottom:0">
+      <li><b>新 class 沒有 <code>`uvm_object_utils</code></b> —— factory 查不到這個型別。</li>
+      <li><b>某處用了 <code>new()</code> 而不是 <code>create()</code></b> ——
+        那一處會偷偷生出舊型別，你會看到「有些 transaction 被換了、有些沒有」的詭異行為。</li>
+    </ol>
+  </div>
+
+  <div class="note">
+    <p><b>兩種 override 範圍：</b></p>
+    <ul style="margin-bottom:0">
+      <li><code>set_type_override_by_type(A, B)</code> —— <b>全系統</b>所有 A 都換成 B。</li>
+      <li><code>set_inst_override_by_type(A, B, "路徑")</code> —— 只換<b>指定路徑</b>下的那一個實體。
+        例如只把某一個 agent 的 driver 換掉，其他保持原樣。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 10 ============ -->
+<section id="s10">
+  <h2 class="sec"><span class="num">10</span>Functional Coverage：測夠了沒</h2>
+
+  <p>
+    Scoreboard 回答「有沒有錯」，Coverage 回答「<strong>有沒有測到</strong>」。
+    兩者都 PASS 不代表驗完 —— 可能只是根本沒送出會出錯的那種輸入。
+  </p>
+
+  <div class="code">
+    <div class="cap"><span>covergroup 掛在 subscriber 裡</span><b>lab6 / cov_coll_c</b></div>
+<pre><code class="sv">class cov_coll_c extends uvm_subscriber #(trans_c);
+  `uvm_component_utils(cov_coll_c)
+
+  trans_c m_trans;                    // ★ covergroup 取樣的來源是這個成員變數
+
+  covergroup covgrp;
+    option.per_instance = 1;          // 每個實體各自統計
+
+    cp1: coverpoint m_trans.in1 {
+      bins in1_min    = {0};          // 單一值
+      bins in1_max    = {127};
+      bins in1_low[]  = {[1:63]};     // [] = 自動展開成 63 個 bin
+      bins in1_high[] = {[64:126]};
+    }
+    cp2: coverpoint m_trans.in2 { /* 同上 */ }
+    cp3: coverpoint m_trans.out {
+      bins low  = {[0:127]};
+      bins high = {[128:254]};        // 有沒有測到「會進位」的情況
+    }
+    cp1xcp2: cross cp1, cp2;          // 交叉：兩邊的組合有沒有走遍
+  endgroup
+
+  function new(string name = "", uvm_component parent);
+    super.new(name, parent);
+    covgrp = new();                   // ★ covergroup 必須在 new() 裡實體化
+  endfunction
+
+  virtual function void write(trans_c t);   // monitor 每廣播一筆就進來一次
+    m_trans = t;                            // 先更新成員變數
+    covgrp.sample();                        // 再取樣
+  endfunction
+endclass</code></pre>
+  </div>
+
+  <div class="warn">
+    <p><b>順序不能顛倒。</b><code>covgrp.sample()</code> 抓的是 <code>m_trans</code>
+    這個成員變數<b>當下的值</b>。如果先 <code>sample()</code> 再 <code>m_trans = t;</code>，
+    每次採樣到的都是上一筆資料。</p>
+    <p><b><code>covgrp = new()</code> 要寫在建構子。</b>寫在 <code>build_phase</code>
+    也可以，但寫漏了就是 null handle，一 <code>sample()</code> 就炸。</p>
+  </div>
+
+  <h3>用覆蓋率當停止條件</h3>
+  <p>
+    這幾個 Lab 的 test 都不是「跑固定 N 次」，而是「<strong>跑到覆蓋率達標為止</strong>」：
+  </p>
+  <div class="code">
+    <div class="cap"><span>覆蓋率驅動的迴圈</span><b>lab1-b, lab2, lab6 / test::main_phase</b></div>
+<pre><code class="sv">while (m_env.m_cov.covgrp.get_coverage() &lt; cov_target &amp;&amp; iter &lt; max_iter) begin
+  m_seq = sequence_c::type_id::create($sformatf("seq_%0d", iter), this);
+  m_seq.start(m_env.m_agt.m_sqr);
+  iter++;
+end
+
+if (iter &gt;= max_iter)
+  `uvm_warning("TEST", "Hit max_iter before reaching coverage target")</code></pre>
+  </div>
+
+  <div class="tbl">
+  <table>
+    <thead><tr><th>API</th><th>回傳</th></tr></thead>
+    <tbody>
+      <tr><td><code>covgrp.get_coverage()</code></td><td>這個<b>型別</b>的整體覆蓋率（所有實體合併）</td></tr>
+      <tr><td><code>covgrp.get_inst_coverage(covered, total)</code></td><td>這個<b>實體</b>的覆蓋率，並用 output 參數回填「中了幾個 / 共幾個 bin」</td></tr>
+      <tr><td><code>covgrp.cp1.get_coverage()</code></td><td>單一 coverpoint 的覆蓋率（找出是哪一項拖累）</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note">
+    <p><b><code>max_iter</code> 這道保險為什麼一定要有：</b>
+    如果 constraint 把輸入限制得太死（例如 lab7 的 <code>in1 == 3</code>），
+    覆蓋率<b>永遠</b>到不了目標，沒有 <code>max_iter</code> 就是無窮迴圈。
+    看到 <code>Hit max_iter</code> 這個 warning，通常代表「約束跟覆蓋率目標互相矛盾」。</p>
+  </div>
+</section>
+
+<!-- ============ 11 ============ -->
+<section id="s11">
+  <h2 class="sec"><span class="num">11</span>換一個協定，會變什麼</h2>
+
+  <p>
+    lab8 把 DUT 從加法器換成 APB slave。整個 UVM 架構——test / env / agent /
+    sequencer / TLM 連線 / phase / factory ——<strong>一行都沒動</strong>。
+    改的只有這四個地方：
+  </p>
+
+  <div class="tbl">
+  <table>
+    <thead><tr><th>要改</th><th>adder（lab1~7）</th><th>APB（lab8）</th></tr></thead>
+    <tbody>
+      <tr><td><b>interface 訊號</b></td>
+        <td><code>in1 / in2 / out</code></td>
+        <td><code>psel penable pwrite paddr pwdata prdata pready pslverr</code></td></tr>
+      <tr><td><b>transaction 欄位</b></td>
+        <td><code>rand in1, in2</code>；<code>out</code></td>
+        <td><code>rand pwrite, paddr, pwdata</code>；<code>prdata, pslverr</code>，再加位址 constraint</td></tr>
+      <tr><td><b>driver 時序</b></td>
+        <td>一拍打上去就好</td>
+        <td><b>兩階段</b>：Setup → Access，還要等 <code>pready</code></td></tr>
+      <tr><td><b>monitor 取樣條件</b></td>
+        <td>每一拍都是一筆</td>
+        <td>只有 <code>psel &amp;&amp; penable &amp;&amp; pready</code> 成立那一拍才是一筆</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 900 280" role="img" aria-label="APB 時序：IDLE、SETUP、ACCESS 三個階段與 pready wait state">
+      <text class="s-sub" x="128" y="50" style="text-anchor:end; font-family:var(--mono); font-size:12px; fill:var(--fg)">clk</text>
+      <text class="s-sub" x="128" y="104" style="text-anchor:end; font-family:var(--mono); font-size:12px; fill:var(--fg)">psel</text>
+      <text class="s-sub" x="128" y="158" style="text-anchor:end; font-family:var(--mono); font-size:12px; fill:var(--fg)">penable</text>
+      <text class="s-sub" x="128" y="212" style="text-anchor:end; font-family:var(--mono); font-size:12px; fill:var(--fg)">pready</text>
+
+      <!-- phase guides -->
+      <line class="s-dash" x1="300" y1="26" x2="300" y2="246"/>
+      <line class="s-dash" x1="380" y1="26" x2="380" y2="246"/>
+      <line class="s-dash" x1="540" y1="26" x2="540" y2="246"/>
+
+      <rect x="300" y="24" width="80" height="18" fill="var(--blue-soft)" stroke="var(--blue)" stroke-width="1"/>
+      <text class="s-sub" x="340" y="33" style="fill:var(--blue)">SETUP</text>
+      <rect x="380" y="24" width="160" height="18" fill="var(--green-soft)" stroke="var(--green)" stroke-width="1"/>
+      <text class="s-sub" x="460" y="33" style="fill:var(--green)">ACCESS（含 1 個 wait state）</text>
+      <text class="s-sub" x="220" y="33" style="fill:var(--fg-faint)">IDLE</text>
+      <text class="s-sub" x="700" y="33" style="fill:var(--fg-faint)">IDLE</text>
+
+      <!-- clk -->
+      <path class="s-wave" d="M140,64 L140,36 L180,36 L180,64 L220,64 L220,36 L260,36 L260,64 L300,64 L300,36 L340,36 L340,64 L380,64 L380,36 L420,36 L420,64 L460,64 L460,36 L500,36 L500,64 L540,64 L540,36 L580,36 L580,64 L620,64 L620,36 L660,36 L660,64 L700,64 L700,36 L740,36 L740,64 L780,64 L780,36 L820,36 L820,64 L860,64"/>
+      <!-- psel -->
+      <path class="s-wave" d="M140,118 L300,118 L300,90 L540,90 L540,118 L860,118"/>
+      <!-- penable -->
+      <path class="s-wave" d="M140,172 L380,172 L380,144 L540,144 L540,172 L860,172"/>
+      <!-- pready -->
+      <path class="s-wave" d="M140,226 L460,226 L460,198 L540,198 L540,226 L860,226"/>
+
+      <text class="s-sub" x="540" y="250" style="fill:var(--accent); font-size:13px">▲</text>
+      <text class="s-sub" x="140" y="270" style="text-anchor:start; fill:var(--accent)">▲ psel &amp;&amp; penable &amp;&amp; pready 同時成立的這個邊緣＝transfer 完成，monitor 在此取樣</text>
+    </svg>
+    </div>
+    <figcaption>APB transfer：PSEL 先拉高進 Setup，下一拍 PENABLE 拉高進 Access，
+    再等 PREADY = 1 才算完成。中間 PADDR / PWRITE / PWDATA 都不能變。</figcaption>
+  </figure>
+
+  <div class="code">
+    <div class="cap"><span>Driver：兩階段時序 + wait state</span><b>lab8 / driver_c</b></div>
+<pre><code class="sv">// Setup phase：PSEL=1、PENABLE=0，放上位址/方向/寫資料
+@(posedge apb_vif.clk);
+apb_vif.psel    &lt;= 1'b1;
+apb_vif.penable &lt;= 1'b0;
+apb_vif.pwrite  &lt;= m_trans.pwrite;
+apb_vif.paddr   &lt;= m_trans.paddr;
+apb_vif.pwdata  &lt;= m_trans.pwdata;
+
+// Access phase：下一拍才把 PENABLE 拉高
+@(posedge apb_vif.clk);
+apb_vif.penable &lt;= 1'b1;
+
+// Wait state：PREADY=0 就繼續等，期間不能改 PADDR/PWRITE/PWDATA
+while (!apb_vif.pready)
+  @(posedge apb_vif.clk);</code></pre>
+  </div>
+
+  <div class="code">
+    <div class="cap"><span>Monitor：只在 transfer 真的完成時取樣</span><b>lab8 / monitor_c</b></div>
+<pre><code class="sv">if (apb_vif.psel &amp;&amp; apb_vif.penable &amp;&amp; apb_vif.pready) begin
+  s_pwrite = apb_vif.pwrite;      // (a) 先鎖存刺激欄位
+  s_paddr  = apb_vif.paddr;
+  s_pwdata = apb_vif.pwdata;
+
+  @(posedge apb_vif.clk);
+  #1;                             // (b) 等 DUT 用 NBA 寫的 prdata/pslverr 穩定
+
+  m_trans = trans_c::type_id::create($sformatf("mon_trans_%0d", idx++), this);
+  m_trans.pwrite  = s_pwrite;
+  m_trans.paddr   = s_paddr;
+  m_trans.pwdata  = s_pwdata;
+  m_trans.prdata  = apb_vif.prdata;   // (c) 再補上 DUT response
+  m_trans.pslverr = apb_vif.pslverr;
+end</code></pre>
+  </div>
+
+  <h3>Assertion 與 Cover Property：UVM 之外的另一層</h3>
+  <p>
+    協定規則除了寫在 driver 裡，還可以用 SVA 直接<strong>釘在訊號上</strong>，
+    寫在 <code>module top</code>（不在 class 世界）。任何人違反就立刻報錯 ——
+    包括你自己的 driver 寫錯的時候。
+  </p>
+
+  <div class="code">
+    <div class="cap"><span>協定 assertion + cover property</span><b>lab8 / module top</b></div>
+<pre><code class="sv">// assertion：PENABLE 只能在「前一拍已經是 Setup phase」之後才拉高
+property apb_penable_after_psel;
+  @(posedge clk) disable iff (!rst_n)
+    $rose(intf.penable) |-&gt;
+      (intf.psel &amp;&amp; $past(intf.psel &amp;&amp; !intf.penable));
+endproperty
+
+apb_penable_after_psel_a : assert property (apb_penable_after_psel)
+  else `uvm_error("APB_ASSERT", "PENABLE asserted without previous APB setup phase")
+
+// cover property：確認測試中真的走過 Setup → Access 這條路
+property apb_setup_to_access;
+  @(posedge clk) disable iff (!rst_n)
+    (intf.psel &amp;&amp; !intf.penable) ##1 (intf.psel &amp;&amp; intf.penable);
+endproperty
+
+apb_setup_to_access_cp : cover property (apb_setup_to_access);</code></pre>
+  </div>
+
+  <div class="note">
+    <p><b><code>assert</code> 和 <code>cover</code> 是一體兩面：</b>
+    <code>assert property</code> 說「這件事<b>不准</b>發生」，
+    <code>cover property</code> 說「這件事<b>要確認有</b>發生過」。
+    只寫 assert 的話，一個從來沒被觸發的 assertion 會永遠 PASS ——
+    看起來很安全，其實你根本沒測到。<code>disable iff (!rst_n)</code>
+    則是避免 reset 期間的無效狀態被誤判成違規。</p>
+  </div>
+</section>
+
+<!-- ============ 12 ============ -->
+<section id="s12">
+  <h2 class="sec"><span class="num">12</span>初學者地雷清單</h2>
+
+  <p>下面每一條都對應到 Lab 註解裡標星號、或刻意設計成實驗的地方。卡住的時候從這裡開始翻。</p>
+
+  <div class="pit">
+    <h4><span class="idx">01</span>改了 .sv 卻只跑 <code>make run</code>，行為完全沒變</h4>
+    <dl>
+      <dt>症狀</dt><dd>你明明改了程式，log 卻跟上次一模一樣。</dd>
+      <dt>原因</dt><dd><code>make run</code> 只是執行既有的 <code>simv</code>，不會重新編譯。</dd>
+      <dt>正解</dt><dd><code>make</code>（= compile + run）或 <code>make compile</code> 後再 <code>make run</code>。
+        只有 <code>seed</code> / <code>verbosity</code> / <code>TEST_NAME</code> 這三個是 runtime 參數，改它們才不用重編。</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">02</span>模擬在 0ns 就結束，log 幾乎空的</h4>
+    <dl>
+      <dt>症狀</dt><dd>沒有任何 DRV / MON / SCR 訊息，直接跳到 report summary。</dd>
+      <dt>原因</dt><dd>忘了 <code>phase.raise_objection(this)</code>。沒人反對，UVM 立刻收工。</dd>
+      <dt>正解</dt><dd>耗時的 phase 一開頭 raise、結尾 drop，兩者必須成對。</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">03</span><code>Illegal time-consuming statement</code></h4>
+    <dl>
+      <dt>症狀</dt><dd>編譯或執行時報這個錯。</dd>
+      <dt>原因</dt><dd>在 <code>build_phase</code> / <code>connect_phase</code> / <code>write()</code>
+        這種 <code>function</code> 裡放了 <code>#10</code> 或 <code>@(posedge clk)</code>。</dd>
+      <dt>正解</dt><dd>要等時間，搬到 <code>run_phase</code> / <code>main_phase</code>（<code>task</code>）。</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">04</span><code>UVM_FATAL: Unable to get interface</code></h4>
+    <dl>
+      <dt>症狀</dt><dd>一開跑就 fatal，元件根本沒建起來。</dd>
+      <dt>原因</dt><dd>config_db 的三要素之一不符：<b>型態</b>（<code>virtual adder_intf</code> ≠
+        <code>virtual adder_intf.drv</code>）、<b>路徑</b>、<b>key 字串</b>。</dd>
+      <dt>正解</dt><dd>把 set 端和 get 端兩行並排比對，逐字檢查。八成是 modport 那截漏了。</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">05</span>Scoreboard 全紅，但 DUT 明明是對的</h4>
+    <dl>
+      <dt>症狀</dt><dd>每一筆都 FAIL，而且錯得很有規律（像是差一拍）。</dd>
+      <dt>原因</dt><dd>Monitor 取樣時序錯了。DUT 有 1 cycle latency，
+        同一拍抓 <code>in1/in2</code> 和 <code>out</code>，等於把這一筆的輸入配上上一筆的輸出。</dd>
+      <dt>正解</dt><dd>先暫存輸入，<code>@(posedge clk)</code> 之後才讀輸出（見第 4 章 monitor 範例）。</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">06</span>結果每次跑都不一樣，或偶爾抓到舊值</h4>
+    <dl>
+      <dt>症狀</dt><dd>同一個 seed 換個模擬器版本結果就變了。</dd>
+      <dt>原因</dt><dd>取樣 race。DUT 用 <code>&lt;=</code> 在 NBA 區更新，
+        monitor 在 <code>@(posedge clk)</code> 醒來就讀，兩者順序不保證。</dd>
+      <dt>正解</dt><dd>取樣前補 <code>#1</code>，或改用 clocking block 的
+        <code>input</code> skew 明確定義取樣點。</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">07</span>Driver 寫訊號用了 <code>=</code></h4>
+    <dl>
+      <dt>症狀</dt><dd>波形看起來對，但結果時好時壞。</dd>
+      <dt>原因</dt><dd>阻塞賦值和 DUT 的 <code>always_ff</code> 在同一個時間點搶更新順序。</dd>
+      <dt>正解</dt><dd>驅動 DUT 輸入一律用非阻塞 <code>&lt;=</code>。
+        class 內部的變數運算才用 <code>=</code>。</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">08</span>比對用 <code>==</code> 而不是 <code>===</code></h4>
+    <dl>
+      <dt>症狀</dt><dd>訊號是 X 的時候，比對結果既不是 PASS 也不是 FAIL，if 判斷行為詭異。</dd>
+      <dt>原因</dt><dd><code>==</code> 遇到 X/Z 會回傳 X（不是 0 也不是 1）。</dd>
+      <dt>正解</dt><dd>四值訊號的比對一律用 <code>===</code>，它保證回 0 或 1，X 也能正確比出來。</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">09</span>每圈迴圈跑出兩筆 transaction</h4>
+    <dl>
+      <dt>症狀</dt><dd>PASS 數是預期的兩倍。</dd>
+      <dt>原因</dt><dd>在 sequence 的 <code>body()</code> 裡同時用了
+        <code>`uvm_do(m_trans)</code> 和手寫的 <code>start_item/finish_item</code>。
+        <code>`uvm_do</code> 本身就已經包含 create + start_item + randomize + finish_item。</dd>
+      <dt>正解</dt><dd>兩種寫法擇一。想加自訂 constraint 或印 log 就用手寫版，圖方便就用 <code>`uvm_do</code>。</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">10</span>模擬跑很久然後 <code>Hit max_iter</code></h4>
+    <dl>
+      <dt>症狀</dt><dd>迭代跑滿上限，覆蓋率還是很低。</dd>
+      <dt>原因</dt><dd>constraint 把輸入空間限制死了（例如 <code>in1 &lt; 10</code> 或 <code>in1 == 3</code>），
+        高位的 bin 永遠打不到。</dd>
+      <dt>正解</dt><dd>這其實是<b>正確且有價值的訊號</b>：它告訴你「約束和覆蓋率目標互相矛盾」。
+        用 <code>cp1.get_coverage()</code> 找出是哪個 coverpoint 卡住。</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">11</span>Factory override 設了卻沒生效</h4>
+    <dl>
+      <dt>症狀</dt><dd><code>uvm_factory::get().print()</code> 看得到 override 表，行為卻沒變。</dd>
+      <dt>原因</dt><dd>(a) 新 class 忘了 <code>`uvm_object_utils</code>；
+        (b) 某處用 <code>new()</code> 而不是 <code>type_id::create()</code>；
+        (c) override 設在 <code>create()</code> 之後才生效不了。</dd>
+      <dt>正解</dt><dd>override 放在 <code>build_phase</code> 的<b>第一行</b>，
+        在 <code>super.build_phase()</code> 之前。</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">12</span><code>+UVM_TESTNAME=... not found</code></h4>
+    <dl>
+      <dt>症狀</dt><dd>UVM_FATAL：Requested test from command line not found。</dd>
+      <dt>原因</dt><dd>命令列給的名字，跟 <code>`uvm_component_utils(...)</code>
+        註冊的 class 名字不一樣（打錯字、或 Makefile 的 <code>TEST_NAME</code> 沒改）。</dd>
+      <dt>正解</dt><dd>factory 是<b>用字串查</b>的，名字必須完全一致（大小寫也算）。</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">13</span>訊息沒印出來</h4>
+    <dl>
+      <dt>症狀</dt><dd>明明寫了 <code>`uvm_info</code>，log 上找不到。</dd>
+      <dt>原因</dt><dd>訊息等級低於當前 verbosity 門檻。寫 <code>UVM_HIGH</code>
+        的訊息在預設 <code>UVM_MEDIUM</code> 下不會顯示。</dd>
+      <dt>正解</dt><dd><code>make run verbosity=UVM_HIGH</code>（runtime 參數，不用重編）。
+        重要的統計訊息用 <code>UVM_NONE</code>，保證一定印。</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">14</span>漏了 <code>`include "uvm_macros.svh"</code></h4>
+    <dl>
+      <dt>症狀</dt><dd>一整排 <code>`uvm_info</code> / <code>`uvm_component_utils</code> 都說「未定義」。</dd>
+      <dt>原因</dt><dd><code>import uvm_pkg::*;</code> 只帶進 <b>class library</b>，
+        巨集要靠 <code>`include</code> 才有。</dd>
+      <dt>正解</dt><dd>檔案開頭兩行一起寫，並用 <code>`ifndef UVM_MACROS_SVH</code> 包起來避免重複 include。</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">15</span>第二筆 transaction 送不出去，像卡死</h4>
+    <dl>
+      <dt>症狀</dt><dd>只看到第一筆 DRV 訊息，之後就沒動靜了。</dd>
+      <dt>原因</dt><dd>driver 的 <code>get_next_item()</code> 沒有對應的 <code>item_done()</code>。
+        Sequencer 認為上一筆還沒做完，不會給下一筆。</dd>
+      <dt>正解</dt><dd>兩者成對出現，中間不能有 <code>return</code> 或 <code>break</code> 跳過。</dd>
+    </dl>
+  </div>
+</section>
+
+<!-- ============ 13 ============ -->
+<section id="s13">
+  <h2 class="sec"><span class="num">13</span>執行速查</h2>
+
+  <h3>Make target</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>指令</th><th>做什麼</th><th>改了 .sv 之後夠不夠</th></tr></thead>
+    <tbody>
+      <tr><td><code>make clean</code></td><td>砍掉 <code>simv</code>、log、fsdb 等產物</td><td>—</td></tr>
+      <tr><td><code>make compile</code></td><td>只編譯，產生 <code>simv</code></td><td>✔ 要</td></tr>
+      <tr><td><code>make run</code></td><td>只執行既有的 <code>simv</code></td><td>✘ <b>不夠</b></td></tr>
+      <tr><td><code>make</code></td><td>compile + run</td><td>✔ 最保險</td></tr>
+      <tr><td><code>make random</code></td><td>compile 後用隨機 seed 跑</td><td>✔</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Runtime 參數：改這三個不用重編</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>參數</th><th>範例</th><th>作用</th></tr></thead>
+    <tbody>
+      <tr><td><code>seed</code></td><td><code>make run seed=2</code></td>
+        <td>換一組隨機測資。同一個 seed 結果可重現 —— <b>debug 時務必固定 seed</b></td></tr>
+      <tr><td><code>verbosity</code></td><td><code>make run verbosity=UVM_HIGH</code></td>
+        <td>調整 log 詳細程度</td></tr>
+      <tr><td><code>TEST_NAME</code></td><td><code>make run TEST_NAME=test</code></td>
+        <td>換要跑的 test class（等同 <code>+UVM_TESTNAME=</code>）</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Verbosity 五級</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>等級</th><th>數值</th><th>什麼時候用</th></tr></thead>
+    <tbody>
+      <tr><td><code>UVM_NONE</code></td><td>0</td><td>一定要印。最終統計、PASS/FAIL summary</td></tr>
+      <tr><td><code>UVM_LOW</code></td><td>100</td><td>重要里程碑，例如 phase marker、iteration 進度</td></tr>
+      <tr><td><code>UVM_MEDIUM</code></td><td>200</td><td><b>預設門檻</b>。每筆 transaction 的 DRV/MON/SCR 訊息</td></tr>
+      <tr><td><code>UVM_HIGH</code></td><td>300</td><td>debug 用的細節，例如每次 coverage 採樣</td></tr>
+      <tr><td><code>UVM_DEBUG</code></td><td>500</td><td>最囉唆</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="color:var(--fg-muted); font-size:.9rem">
+    規則：<b>訊息等級 ≤ 當前門檻</b> 才會印。所以預設 <code>UVM_MEDIUM</code> 下，
+    <code>NONE/LOW/MEDIUM</code> 會出現，<code>HIGH/DEBUG</code> 被過濾掉。
+  </p>
+
+  <h3>從 log 的 ID 反查是誰印的</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>ID</th><th>來源元件</th><th>看到它代表</th></tr></thead>
+    <tbody>
+      <tr><td><code>[SEQ]</code></td><td><code>sequence_c</code></td><td>產生了一筆隨機刺激</td></tr>
+      <tr><td><code>[DRV]</code></td><td><code>driver_c</code></td><td>刺激已經打到腳位上</td></tr>
+      <tr><td><code>[MON]</code></td><td><code>monitor_c</code></td><td>從腳位觀察回一筆完整交易</td></tr>
+      <tr><td><code>[SCR]</code></td><td><code>scoreboard_c</code></td><td>比對結果 PASS / FAIL</td></tr>
+      <tr><td><code>[COV]</code></td><td><code>cov_coll_c</code></td><td>採樣了一筆（<code>UVM_HIGH</code> 才看得到）</td></tr>
+      <tr><td><code>[TEST]</code></td><td><code>test</code></td><td>iteration 進度、覆蓋率摘要</td></tr>
+      <tr><td><code>[PHASE]</code></td><td><code>test</code></td><td>phase marker（lab2 自己加的）</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note">
+    <p><b>Debug 建議順序：</b>照著 <code>SEQ → DRV → MON → SCR</code> 這條線看。
+    在哪一步斷掉，問題就在那一段：<br>
+    沒有 SEQ → sequence 沒 start 或 objection 沒 raise；<br>
+    有 SEQ 沒 DRV → driver 的 <code>get_next_item</code> 卡住或 vif 沒拿到；<br>
+    有 DRV 沒 MON → monitor 時序寫錯或卡在 <code>wait()</code>；<br>
+    有 MON 沒 SCR → TLM 沒 connect。</p>
+  </div>
+</section>
+
+<!-- ============ 14 ============ -->
+<section id="s14">
+  <h2 class="sec"><span class="num">14</span>Lab 學習地圖</h2>
+
+  <p>把 8 個 Lab 當成本文各章的索引 —— 想複習哪個觀念，就去翻對應的 Lab：</p>
+
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Lab</th><th>核心觀念</th><th>對應章節</th></tr></thead>
+    <tbody>
+      <tr><td><b>1-a</b></td><td>最小 UVM 骨架、<code>run_test()</code>、objection、verbosity</td><td>01, 06, 13</td></tr>
+      <tr><td><b>1-b</b></td><td>完整 8 元件架構全景、interface + modport、資料流</td><td>02, 03, 04</td></tr>
+      <tr><td><b>2</b></td><td>Phase 執行順序、<code>print_topology()</code>、function phase 不可 delay</td><td>06</td></tr>
+      <tr><td><b>3</b></td><td>Transaction 欄位與 field macro、sequence 的 <code>`uvm_do</code>、driver 握手迴圈</td><td>04, 05</td></tr>
+      <tr><td><b>4</b></td><td><code>uvm_config_db</code> set/get、analysis port 的宣告與連線</td><td>07, 08</td></tr>
+      <tr><td><b>5-a</b></td><td><code>uvm_analysis_imp</code> + <code>write()</code> 即時比對、reference model</td><td>07</td></tr>
+      <tr><td><b>5-b</b></td><td><code>uvm_tlm_analysis_fifo</code> 暫存後比對（pipeline 用）</td><td>07</td></tr>
+      <tr><td><b>6</b></td><td>covergroup / coverpoint / bins / cross、<code>is_active</code></td><td>03, 10</td></tr>
+      <tr><td><b>7</b></td><td>Factory override，不改架構換行為</td><td>05, 09</td></tr>
+      <tr><td><b>8</b></td><td>換協定（APB）：只動 transaction / driver / monitor / interface；SVA</td><td>11</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>如果只記得住五件事</h3>
+  <ol>
+    <li><b>資料流永遠是</b> sequence → sequencer → driver → interface → DUT → interface → monitor → analysis port → scoreboard / coverage。卡住的時候先問「斷在哪一站」。</li>
+    <li><b>兩大家族</b>：transaction 系是 <code>uvm_object</code>（<code>new(name)</code> + <code>`uvm_object_utils</code>），
+      元件系是 <code>uvm_component</code>（<code>new(name, parent)</code> + <code>`uvm_component_utils</code>）。</li>
+    <li><b>一律用 <code>type_id::create()</code></b>，不用 <code>new()</code>。這是 factory override 的前提。</li>
+    <li><b>只有 <code>run_phase</code> / <code>main_phase</code> 能消耗時間</b>，其他 phase 都是 function。</li>
+    <li><b>objection 決定模擬何時結束</b>，忘了 raise 就是 0ns 收工。</li>
+  </ol>
+</section>
+
+<footer>
+  <p>整理自 <code>UVM_LABS</code> lab1 ~ lab8 教材（UVM 1.2 / VCS）。範例程式碼皆節錄自各 Lab 的解答檔。</p>
+</footer>
+
+</main>
+</div>
+</div>
+
+<script>
+(function(){
+  // ---------- 極簡 SystemVerilog 語法上色 ----------
+  var KW = ("module endmodule interface endinterface modport program endprogram package endpackage "
+    +"class endclass extends implements virtual function endfunction task endtask automatic static "
+    +"begin end fork join join_any join_none if else while for foreach forever repeat do case endcase "
+    +"default return break continue new this super null void assert property endproperty cover sequence "
+    +"endsequence covergroup endgroup coverpoint bins cross option import export typedef enum struct "
+    +"union parameter localparam always always_ff always_comb always_latch initial assign wait disable "
+    +"iff posedge negedge input output inout ref const rand randc constraint randomize inside dist "
+    +"solve before with logic bit int integer real string byte shortint longint reg wire genvar unique "
+    +"priority").split(/\s+/);
+  var TYPES = ("uvm_test uvm_env uvm_agent uvm_driver uvm_monitor uvm_scoreboard uvm_subscriber "
+    +"uvm_sequencer uvm_sequence uvm_sequence_item uvm_component uvm_object uvm_phase uvm_config_db "
+    +"uvm_analysis_port uvm_analysis_imp uvm_analysis_export uvm_tlm_analysis_fifo uvm_factory uvm_root "
+    +"uvm_active_passive_enum").split(/\s+/);
+  var kwSet = {}, tySet = {};
+  KW.forEach(function(w){kwSet[w]=1;});
+  TYPES.forEach(function(w){tySet[w]=1;});
+
+  var RE = new RegExp([
+    "(\\/\\/[^\\n]*)",                                  // 1 comment
+    "(\"(?:[^\"\\\\\\n]|\\\\.)*\")",                    // 2 string
+    "(`[A-Za-z_]\\w*)",                                 // 3 macro
+    "(\\$[A-Za-z_]\\w*)",                               // 4 system task
+    "(\\b\\d+'[sSbBoOdDhH]?[0-9a-fA-FxXzZ_]+)",         // 5 sized literal
+    "(\\b\\d+(?:\\.\\d+)?(?:ns|ps|us|ms|s)?\\b)",       // 6 number
+    "(\\b[A-Za-z_]\\w*\\b)"                             // 7 word
+  ].join("|"), "g");
+
+  function esc(s){
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+  function span(cls, txt){ return '<span class="tok-'+cls+'">'+esc(txt)+'</span>'; }
+
+  function highlight(src){
+    var out = "", last = 0, m;
+    RE.lastIndex = 0;
+    while ((m = RE.exec(src)) !== null){
+      out += esc(src.slice(last, m.index));
+      if (m[1])      out += span("c", m[1]);
+      else if (m[2]) out += span("s", m[2]);
+      else if (m[3]) out += span("m", m[3]);
+      else if (m[4]) out += span("m", m[4]);
+      else if (m[5]) out += span("n", m[5]);
+      else if (m[6]) out += span("n", m[6]);
+      else if (m[7]){
+        var w = m[7];
+        if (kwSet[w])                       out += span("k", w);
+        else if (tySet[w])                  out += span("t", w);
+        else if (/^UVM_[A-Z0-9_]+$/.test(w))out += span("n", w);
+        else if (/_c$/.test(w))             out += span("t", w);
+        else                                out += esc(w);
+      }
+      last = RE.lastIndex;
+    }
+    out += esc(src.slice(last));
+    return out;
+  }
+
+  document.querySelectorAll("pre > code.sv").forEach(function(el){
+    el.innerHTML = highlight(el.textContent);
+  });
+
+  // ---------- 目錄高亮 ----------
+  var links = Array.prototype.slice.call(document.querySelectorAll("nav.toc a"));
+  var secs  = links.map(function(a){ return document.querySelector(a.getAttribute("href")); })
+                   .filter(Boolean);
+  if (!secs.length) return;
+
+  function sync(){
+    var y = window.scrollY + 120, cur = 0;
+    for (var i = 0; i < secs.length; i++){
+      if (secs[i].offsetTop <= y) cur = i;
+    }
+    links.forEach(function(a, i){ a.classList.toggle("active", i === cur); });
+  }
+  var ticking = false;
+  window.addEventListener("scroll", function(){
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function(){ sync(); ticking = false; });
+  }, {passive:true});
+  sync();
+})();
+</script>
+
+</body>
+</html>
