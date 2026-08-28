@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>UVM 基礎觀念筆記 — 從 8 個 Lab 看懂架構、資料流與型態</title>
+<title>UVM 基礎觀念筆記 — 架構、資料流、資料型態與新手地雷</title>
 <meta name="description" content="給初學者的 UVM 入門：架構全景、資料怎麼流、有哪些資料型態、以及新手最常踩的坑。">
 <style>
 /* ---------- tokens：淺色為預設，深色只覆寫顏色 ---------- */
@@ -254,10 +254,10 @@ footer{border-top:1px solid var(--line); padding:28px 0 60px; color:var(--fg-fai
 <header class="top">
   <div class="wrap">
     <p class="eyebrow">SystemVerilog / UVM 1.2 · 初學者筆記</p>
-    <h1>UVM 基礎觀念<br>從 8 個 Lab 看懂架構、資料流與型態</h1>
+    <h1>UVM 基礎觀念<br>架構、資料流、資料型態與新手地雷</h1>
     <p class="lede">
-      這份筆記不介紹「每個 Lab 在做什麼」，而是把 8 個 Lab 拆開當素材，
-      回答四個初學者最需要先搞懂的問題：<b>UVM 的架構長什麼樣</b>、
+      這份筆記不逐條解釋語法，而是回答四個初學者最需要先搞懂的問題：
+      <b>UVM 的架構長什麼樣</b>、
       <b>一筆資料從產生到被檢查中間走過哪些站</b>、<b>沿路上它是什麼型態</b>、
       以及<b>哪些細節不注意就會卡住</b>。
     </p>
@@ -288,7 +288,7 @@ footer{border-top:1px solid var(--line); padding:28px 0 60px; color:var(--fg-fai
     <li><a href="#s11">換一個協定會變什麼</a></li>
     <li><a href="#s12">初學者地雷清單</a></li>
     <li><a href="#s13">執行速查</a></li>
-    <li><a href="#s14">Lab 學習地圖</a></li>
+    <li><a href="#s14">重點回顧</a></li>
   </ol>
 </nav>
 
@@ -301,7 +301,7 @@ footer{border-top:1px solid var(--line); padding:28px 0 60px; color:var(--fg-fai
   <p>最小的 UVM testbench 只有三十行。它做的事情就是「印一行字」：</p>
 
   <div class="code">
-    <div class="cap"><span>最小 UVM testbench</span><b>lab1-a / hello_world_uvm.sv</b></div>
+    <div class="cap"><span>最小 UVM testbench</span><b>hello_world_uvm.sv</b></div>
 <pre><code class="sv">program automatic test;
 
   import uvm_pkg::*;
@@ -406,7 +406,7 @@ endprogram</code></pre>
   </p>
 
   <div class="code">
-    <div class="cap"><span>interface 與三個 modport</span><b>lab1-b / testbench/adder_intf.sv</b></div>
+    <div class="cap"><span>interface 與三個 modport</span><b>adder_intf.sv</b></div>
 <pre><code class="sv">interface adder_intf (input logic clk, input logic rst_n);
   logic [6:0] in1;
   logic [6:0] in2;
@@ -535,7 +535,7 @@ endinterface</code></pre>
     </svg>
     </div>
     <figcaption>
-      元件樹（lab1-b 起就是這個形狀，一路用到 lab7）。虛線以上是 class、以下是 module；
+      元件樹：這是 UVM testbench 最典型的形狀。虛線以上是 class、以下是 module；
       <code>driver</code> 與 <code>monitor</code> 各自握著一份 virtual interface 才能跨過去。
     </figcaption>
   </figure>
@@ -560,11 +560,11 @@ endinterface</code></pre>
   <div class="note">
     <p><b>Active vs Passive：</b><code>uvm_agent</code> 內建一個 <code>is_active</code> 欄位。
     Active 時建 driver + sequencer + monitor；Passive 時<strong>只建 monitor</strong>（純觀察，不出刺激）。
-    lab6 就是在 agent 的 build/connect 裡加上這個判斷：</p>
+    做法是在 agent 的 build / connect 裡加上這個判斷：</p>
   </div>
 
   <div class="code">
-    <div class="cap"><span>Active / Passive 判斷</span><b>lab6 / agent_c</b></div>
+    <div class="cap"><span>Active / Passive 判斷</span><b>agent_c</b></div>
 <pre><code class="sv">virtual function void build_phase(uvm_phase phase);
   super.build_phase(phase);
   if (is_active == UVM_ACTIVE) begin              // 只有 Active 才需要出刺激
@@ -726,7 +726,7 @@ endfunction</code></pre>
 
   <h3>Driver：轉換的一半</h3>
   <div class="code">
-    <div class="cap"><span>從 sequencer 拿 item、驅動腳位、回報完成</span><b>lab3 / driver_c</b></div>
+    <div class="cap"><span>從 sequencer 拿 item、驅動腳位、回報完成</span><b>driver_c</b></div>
 <pre><code class="sv">virtual task run_phase(uvm_phase phase);
   trans_c m_trans;
 
@@ -754,7 +754,7 @@ endtask</code></pre>
 
   <h3>Monitor：轉換的另一半（也是最容易寫錯時序的地方）</h3>
   <div class="code">
-    <div class="cap"><span>對付 1-cycle latency 與 NBA race</span><b>lab1-b / monitor_c</b></div>
+    <div class="cap"><span>對付 1-cycle latency 與 NBA race</span><b>monitor_c</b></div>
 <pre><code class="sv">virtual task run_phase(uvm_phase phase);
   trans_c m_trans;
   logic [6:0] in1_q, in2_q;      // 暫存這一拍的輸入
@@ -829,7 +829,7 @@ endtask</code></pre>
 
   <h3>Transaction：資料的容器</h3>
   <div class="code">
-    <div class="cap"><span>典型 transaction</span><b>lab1-b ~ lab7 / trans_c</b></div>
+    <div class="cap"><span>典型 transaction</span><b>trans_c</b></div>
 <pre><code class="sv">class trans_c extends uvm_sequence_item;
   rand logic [6:0] in1;        // rand：randomize() 時會被灌值
   rand logic [6:0] in2;
@@ -878,16 +878,16 @@ endclass</code></pre>
   <h3>參數化型別：角括號裡放的是什麼</h3>
   <div class="tbl">
   <table>
-    <thead><tr><th>寫法</th><th>參數意義</th><th>出處</th></tr></thead>
+    <thead><tr><th>寫法</th><th>參數意義</th></tr></thead>
     <tbody>
-      <tr><td><code>uvm_sequence #(trans_c)</code></td><td>這條 sequence 產生哪種 item</td><td>lab3</td></tr>
-      <tr><td><code>uvm_sequencer #(trans_c)</code></td><td>這台 sequencer 搬運哪種 item</td><td>lab1-b</td></tr>
-      <tr><td><code>uvm_driver #(trans_c)</code></td><td>這個 driver 收哪種 item（決定 <code>seq_item_port</code> 型態）</td><td>lab3</td></tr>
-      <tr><td><code>uvm_analysis_port #(trans_c)</code></td><td>這個發送埠廣播哪種 item</td><td>lab4</td></tr>
-      <tr><td><code>uvm_analysis_imp #(trans_c, scoreboard_c)</code></td><td><b>兩個</b>參數：收哪種 item ＋ <b>誰</b>來實作 <code>write()</code></td><td>lab5-a</td></tr>
-      <tr><td><code>uvm_subscriber #(trans_c)</code></td><td>內建一個 <code>analysis_export</code>，你只要 override <code>write()</code></td><td>lab6</td></tr>
-      <tr><td><code>uvm_tlm_analysis_fifo #(trans_c)</code></td><td>可暫存的接收端，用 <code>get()</code> 取</td><td>lab5-b</td></tr>
-      <tr><td><code>virtual adder_intf.drv</code></td><td>指向 interface 的參照，<b>帶 modport</b></td><td>lab1-b</td></tr>
+      <tr><td><code>uvm_sequence #(trans_c)</code></td><td>這條 sequence 產生哪種 item</td></tr>
+      <tr><td><code>uvm_sequencer #(trans_c)</code></td><td>這台 sequencer 搬運哪種 item</td></tr>
+      <tr><td><code>uvm_driver #(trans_c)</code></td><td>這個 driver 收哪種 item（決定 <code>seq_item_port</code> 型態）</td></tr>
+      <tr><td><code>uvm_analysis_port #(trans_c)</code></td><td>這個發送埠廣播哪種 item</td></tr>
+      <tr><td><code>uvm_analysis_imp #(trans_c, scoreboard_c)</code></td><td><b>兩個</b>參數：收哪種 item ＋ <b>誰</b>來實作 <code>write()</code></td></tr>
+      <tr><td><code>uvm_subscriber #(trans_c)</code></td><td>內建一個 <code>analysis_export</code>，你只要 override <code>write()</code></td></tr>
+      <tr><td><code>uvm_tlm_analysis_fifo #(trans_c)</code></td><td>可暫存的接收端，用 <code>get()</code> 取</td></tr>
+      <tr><td><code>virtual adder_intf.drv</code></td><td>指向 interface 的參照，<b>帶 modport</b></td></tr>
     </tbody>
   </table>
   </div>
@@ -904,7 +904,7 @@ endclass</code></pre>
     <div class="mini">
       <h4><code>obj = T::type_id::create("name", this)</code></h4>
       <p>透過 factory 生。factory 會先查有沒有 override，有的話<b>換成別的 class</b>。</p>
-      <p style="color:var(--fg-muted)">所有 transaction、sequence、component 都該用這個。這是 lab7 能不改架構就換行為的前提。</p>
+      <p style="color:var(--fg-muted)">所有 transaction、sequence、component 都該用這個。這是「不改架構就能換行為」的前提（見第 9 章）。</p>
     </div>
   </div>
 
@@ -985,7 +985,7 @@ endclass</code></pre>
       <text class="s-lbl" x="18" y="200" transform="rotate(-90 18 200)" style="fill:var(--fg-faint)">時間 →</text>
     </svg>
     </div>
-    <figcaption>Phase 順序（lab2 就是把每個 phase 加上 <code>`uvm_info</code> marker，直接從 log 上看這個順序）。</figcaption>
+    <figcaption>Phase 順序。想親眼確認的話，在每個 phase 裡加一行 <code>`uvm_info</code> marker，log 就會照這個次序印出來。</figcaption>
   </figure>
 
   <h3>兩條要背起來的規則</h3>
@@ -1014,7 +1014,7 @@ endclass</code></pre>
   </p>
 
   <div class="code">
-    <div class="cap"><span>用 objection 圈出「還在做事」的區間</span><b>lab1-b, lab2 / test::main_phase</b></div>
+    <div class="cap"><span>用 objection 圈出「還在做事」的區間</span><b>test::main_phase</b></div>
 <pre><code class="sv">virtual task main_phase(uvm_phase phase);
   sequence_c m_seq;
   int iter = 0;
@@ -1049,7 +1049,7 @@ endtask</code></pre>
     <code>run_phase</code> 是總開關；UVM 另外把它切成 12 個 sub-phase：
     <code>pre_reset → reset → post_reset → pre_configure → configure → post_configure
     → pre_main → main → post_main → pre_shutdown → shutdown → post_shutdown</code>，
-    它們跟 <code>run_phase</code> <b>並行</b>。這幾個 Lab 的慣例是：
+    它們跟 <code>run_phase</code> <b>並行</b>。常見的慣例是：
     driver / monitor 這種「一直跑的」寫在 <code>run_phase</code>，
     test 裡「有開始有結束的測試流程」寫在 <code>main_phase</code>。</p>
   </div>
@@ -1080,7 +1080,6 @@ endtask</code></pre>
       <text class="s-sub" x="153" y="180">monitor 一 write()，立刻同步執行</text>
       <text class="s-sub" x="153" y="212" style="fill:var(--green)">適合：輸出立即可比對</text>
       <text class="s-sub" x="153" y="232">uvm_analysis_imp #(trans_c, scoreboard_c)</text>
-      <text class="s-sub" x="153" y="262" style="fill:var(--fg-faint)">lab5-a</text>
 
       <!-- B -->
       <rect x="309" y="16" width="282" height="266" rx="9" fill="none" stroke="var(--line)" stroke-width="1.2"/>
@@ -1095,7 +1094,6 @@ endtask</code></pre>
       <text class="s-sub" x="450" y="180">只要 override write()</text>
       <text class="s-sub" x="450" y="212" style="fill:var(--green)">適合：coverage、log recorder</text>
       <text class="s-sub" x="450" y="232">uvm_subscriber #(trans_c)</text>
-      <text class="s-sub" x="450" y="262" style="fill:var(--fg-faint)">lab6</text>
 
       <!-- C -->
       <rect x="606" y="16" width="282" height="266" rx="9" fill="none" stroke="var(--line)" stroke-width="1.2"/>
@@ -1113,7 +1111,6 @@ endtask</code></pre>
       <text class="s-sub" x="747" y="180">scoreboard 在 run_phase 用 get() 取</text>
       <text class="s-sub" x="747" y="212" style="fill:var(--green)">適合：pipeline / 有 latency 的 DUT</text>
       <text class="s-sub" x="747" y="232">uvm_tlm_analysis_fifo #(trans_c)</text>
-      <text class="s-sub" x="747" y="262" style="fill:var(--fg-faint)">lab5-b</text>
 
       <defs>
         <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
@@ -1128,7 +1125,7 @@ endtask</code></pre>
 
   <h3>連線都寫在 connect_phase</h3>
   <div class="code">
-    <div class="cap"><span>一個 port 廣播給兩個接收端</span><b>lab4, lab6 / env_c</b></div>
+    <div class="cap"><span>一個 port 廣播給兩個接收端</span><b>env_c</b></div>
 <pre><code class="sv">virtual function void connect_phase(uvm_phase phase);
   super.connect_phase(phase);
   m_agt.m_mon.m_mon_port.connect(m_scr.m_scr_imp);          // → scoreboard
@@ -1146,7 +1143,7 @@ endfunction</code></pre>
   <h3>架構 A（imp）vs 架構 C（FIFO）差在哪</h3>
   <div class="tbl">
   <table>
-    <thead><tr><th>　</th><th>A：analysis_imp（lab5-a）</th><th>C：analysis_fifo（lab5-b）</th></tr></thead>
+    <thead><tr><th>　</th><th>A：analysis_imp</th><th>C：analysis_fifo</th></tr></thead>
     <tbody>
       <tr><td><b>資料來源</b></td><td>只有 monitor 一路，同一筆裡就有 in 和 out</td><td>兩路：driver 送「輸入」、monitor 送「輸出」</td></tr>
       <tr><td><b>比對時機</b></td><td><code>write()</code> 被呼叫的當下立刻比</td><td><code>run_phase</code> 裡 <code>get()</code> 到兩邊資料才比</td></tr>
@@ -1158,7 +1155,7 @@ endfunction</code></pre>
   </div>
 
   <div class="code">
-    <div class="cap"><span>FIFO 版 scoreboard 的核心</span><b>lab5-b / scoreboard_c</b></div>
+    <div class="cap"><span>FIFO 版 scoreboard 的核心</span><b>scoreboard_c（FIFO 版）</b></div>
 <pre><code class="sv">uvm_tlm_analysis_fifo #(trans_c) drv_fifo;   // 存 driver 送來的「輸入」
 uvm_tlm_analysis_fifo #(trans_c) mon_fifo;   // 存 monitor 送來的「輸出」
 
@@ -1195,7 +1192,7 @@ endtask</code></pre>
   </p>
 
   <div class="code">
-    <div class="cap"><span>set 端：在 top 裡，run_test() 之前</span><b>lab1-b, lab4 / module top</b></div>
+    <div class="cap"><span>set 端：在 top 裡，run_test() 之前</span><b>module top</b></div>
 <pre><code class="sv">initial begin
   uvm_config_db#(virtual adder_intf.drv)::set(null,
       "uvm_test_top.m_env.m_agt.m_drv", "adder_vif", intf);
@@ -1208,7 +1205,7 @@ end</code></pre>
   </div>
 
   <div class="code">
-    <div class="cap"><span>get 端：在 build_phase 裡</span><b>lab4 / driver_c</b></div>
+    <div class="cap"><span>get 端：在 build_phase 裡</span><b>driver_c</b></div>
 <pre><code class="sv">virtual adder_intf.drv adder_vif;          // 型態要跟 set 端一模一樣
 
 virtual function void build_phase(uvm_phase phase);
@@ -1250,7 +1247,7 @@ endfunction</code></pre>
   <div class="note">
     <p><b>為什麼 set 兩次？</b>因為 driver 和 monitor 要的 modport 不同
     （<code>.drv</code> 可寫、<code>.mon</code> 唯讀），型態不同就得各存一份。
-    這也是 lab1-b 註解裡特別標星號的重點。</p>
+    這一點很容易漏掉。</p>
     <p><b>路徑可以用萬用字元。</b><code>"*"</code> 代表任意層，例如
     <code>set(null, "*", "adder_vif", intf)</code> 讓所有元件都拿得到 ——
     快速但危險，會讓 monitor 也拿到可寫的 handle。</p>
@@ -1275,7 +1272,7 @@ endfunction</code></pre>
   </ol>
 
   <div class="code">
-    <div class="cap"><span>不改架構，把全系統的 trans_c 換成受限版</span><b>lab7</b></div>
+    <div class="cap"><span>不改架構，把全系統的 trans_c 換成受限版</span><b>test::build_phase</b></div>
 <pre><code class="sv">// (1) 繼承出一個新的 transaction，加一條約束
 class trans_in1_3_c extends trans_c;
   `uvm_object_utils(trans_in1_3_c)          // ★ 一定要註冊，否則 override 不生效
@@ -1337,7 +1334,7 @@ endfunction</code></pre>
   </p>
 
   <div class="code">
-    <div class="cap"><span>covergroup 掛在 subscriber 裡</span><b>lab6 / cov_coll_c</b></div>
+    <div class="cap"><span>covergroup 掛在 subscriber 裡</span><b>cov_coll_c</b></div>
 <pre><code class="sv">class cov_coll_c extends uvm_subscriber #(trans_c);
   `uvm_component_utils(cov_coll_c)
 
@@ -1382,10 +1379,10 @@ endclass</code></pre>
 
   <h3>用覆蓋率當停止條件</h3>
   <p>
-    這幾個 Lab 的 test 都不是「跑固定 N 次」，而是「<strong>跑到覆蓋率達標為止</strong>」：
+    比較好的做法不是「跑固定 N 次」，而是「<strong>跑到覆蓋率達標為止</strong>」：
   </p>
   <div class="code">
-    <div class="cap"><span>覆蓋率驅動的迴圈</span><b>lab1-b, lab2, lab6 / test::main_phase</b></div>
+    <div class="cap"><span>覆蓋率驅動的迴圈</span><b>test::main_phase</b></div>
 <pre><code class="sv">while (m_env.m_cov.covgrp.get_coverage() &lt; cov_target &amp;&amp; iter &lt; max_iter) begin
   m_seq = sequence_c::type_id::create($sformatf("seq_%0d", iter), this);
   m_seq.start(m_env.m_agt.m_sqr);
@@ -1409,7 +1406,7 @@ if (iter &gt;= max_iter)
 
   <div class="note">
     <p><b><code>max_iter</code> 這道保險為什麼一定要有：</b>
-    如果 constraint 把輸入限制得太死（例如 lab7 的 <code>in1 == 3</code>），
+    如果 constraint 把輸入限制得太死（例如把 <code>in1</code> 釘死成單一值），
     覆蓋率<b>永遠</b>到不了目標，沒有 <code>max_iter</code> 就是無窮迴圈。
     看到 <code>Hit max_iter</code> 這個 warning，通常代表「約束跟覆蓋率目標互相矛盾」。</p>
   </div>
@@ -1420,14 +1417,14 @@ if (iter &gt;= max_iter)
   <h2 class="sec"><span class="num">11</span>換一個協定，會變什麼</h2>
 
   <p>
-    lab8 把 DUT 從加法器換成 APB slave。整個 UVM 架構——test / env / agent /
+    把 DUT 從加法器換成 APB slave 之後，整個 UVM 架構——test / env / agent /
     sequencer / TLM 連線 / phase / factory ——<strong>一行都沒動</strong>。
     改的只有這四個地方：
   </p>
 
   <div class="tbl">
   <table>
-    <thead><tr><th>要改</th><th>adder（lab1~7）</th><th>APB（lab8）</th></tr></thead>
+    <thead><tr><th>要改</th><th>adder</th><th>APB slave</th></tr></thead>
     <tbody>
       <tr><td><b>interface 訊號</b></td>
         <td><code>in1 / in2 / out</code></td>
@@ -1483,7 +1480,7 @@ if (iter &gt;= max_iter)
   </figure>
 
   <div class="code">
-    <div class="cap"><span>Driver：兩階段時序 + wait state</span><b>lab8 / driver_c</b></div>
+    <div class="cap"><span>Driver：兩階段時序 + wait state</span><b>driver_c（APB）</b></div>
 <pre><code class="sv">// Setup phase：PSEL=1、PENABLE=0，放上位址/方向/寫資料
 @(posedge apb_vif.clk);
 apb_vif.psel    &lt;= 1'b1;
@@ -1502,7 +1499,7 @@ while (!apb_vif.pready)
   </div>
 
   <div class="code">
-    <div class="cap"><span>Monitor：只在 transfer 真的完成時取樣</span><b>lab8 / monitor_c</b></div>
+    <div class="cap"><span>Monitor：只在 transfer 真的完成時取樣</span><b>monitor_c（APB）</b></div>
 <pre><code class="sv">if (apb_vif.psel &amp;&amp; apb_vif.penable &amp;&amp; apb_vif.pready) begin
   s_pwrite = apb_vif.pwrite;      // (a) 先鎖存刺激欄位
   s_paddr  = apb_vif.paddr;
@@ -1528,7 +1525,7 @@ end</code></pre>
   </p>
 
   <div class="code">
-    <div class="cap"><span>協定 assertion + cover property</span><b>lab8 / module top</b></div>
+    <div class="cap"><span>協定 assertion + cover property</span><b>module top（APB）</b></div>
 <pre><code class="sv">// assertion：PENABLE 只能在「前一拍已經是 Setup phase」之後才拉高
 property apb_penable_after_psel;
   @(posedge clk) disable iff (!rst_n)
@@ -1562,7 +1559,7 @@ apb_setup_to_access_cp : cover property (apb_setup_to_access);</code></pre>
 <section id="s12">
   <h2 class="sec"><span class="num">12</span>初學者地雷清單</h2>
 
-  <p>下面每一條都對應到 Lab 註解裡標星號、或刻意設計成實驗的地方。卡住的時候從這裡開始翻。</p>
+  <p>下面每一條都是實務上真的會撞到的狀況。卡住的時候從這裡開始翻。</p>
 
   <div class="pit">
     <h4><span class="idx">01</span>改了 .sv 卻只跑 <code>make run</code>，行為完全沒變</h4>
@@ -1781,7 +1778,7 @@ apb_setup_to_access_cp : cover property (apb_setup_to_access);</code></pre>
       <tr><td><code>[SCR]</code></td><td><code>scoreboard_c</code></td><td>比對結果 PASS / FAIL</td></tr>
       <tr><td><code>[COV]</code></td><td><code>cov_coll_c</code></td><td>採樣了一筆（<code>UVM_HIGH</code> 才看得到）</td></tr>
       <tr><td><code>[TEST]</code></td><td><code>test</code></td><td>iteration 進度、覆蓋率摘要</td></tr>
-      <tr><td><code>[PHASE]</code></td><td><code>test</code></td><td>phase marker（lab2 自己加的）</td></tr>
+      <tr><td><code>[PHASE]</code></td><td><code>test</code></td><td>phase marker（自己加的）</td></tr>
     </tbody>
   </table>
   </div>
@@ -1798,24 +1795,27 @@ apb_setup_to_access_cp : cover property (apb_setup_to_access);</code></pre>
 
 <!-- ============ 14 ============ -->
 <section id="s14">
-  <h2 class="sec"><span class="num">14</span>Lab 學習地圖</h2>
+  <h2 class="sec"><span class="num">14</span>重點回顧</h2>
 
-  <p>把 8 個 Lab 當成本文各章的索引 —— 想複習哪個觀念，就去翻對應的 Lab：</p>
+  <p>每章濃縮成一句話，當索引用 —— 想不起來哪一段，從這裡跳回去：</p>
 
   <div class="tbl">
   <table>
-    <thead><tr><th>Lab</th><th>核心觀念</th><th>對應章節</th></tr></thead>
+    <thead><tr><th>章</th><th>一句話</th></tr></thead>
     <tbody>
-      <tr><td><b>1-a</b></td><td>最小 UVM 骨架、<code>run_test()</code>、objection、verbosity</td><td>01, 06, 13</td></tr>
-      <tr><td><b>1-b</b></td><td>完整 8 元件架構全景、interface + modport、資料流</td><td>02, 03, 04</td></tr>
-      <tr><td><b>2</b></td><td>Phase 執行順序、<code>print_topology()</code>、function phase 不可 delay</td><td>06</td></tr>
-      <tr><td><b>3</b></td><td>Transaction 欄位與 field macro、sequence 的 <code>`uvm_do</code>、driver 握手迴圈</td><td>04, 05</td></tr>
-      <tr><td><b>4</b></td><td><code>uvm_config_db</code> set/get、analysis port 的宣告與連線</td><td>07, 08</td></tr>
-      <tr><td><b>5-a</b></td><td><code>uvm_analysis_imp</code> + <code>write()</code> 即時比對、reference model</td><td>07</td></tr>
-      <tr><td><b>5-b</b></td><td><code>uvm_tlm_analysis_fifo</code> 暫存後比對（pipeline 用）</td><td>07</td></tr>
-      <tr><td><b>6</b></td><td>covergroup / coverpoint / bins / cross、<code>is_active</code></td><td>03, 10</td></tr>
-      <tr><td><b>7</b></td><td>Factory override，不改架構換行為</td><td>05, 09</td></tr>
-      <tr><td><b>8</b></td><td>換協定（APB）：只動 transaction / driver / monitor / interface；SVA</td><td>11</td></tr>
+      <tr><td><a href="#s1"><b>01</b></a></td><td>UVM 買到的是「可重用、可隨機、自動比對、可量化」四件事</td></tr>
+      <tr><td><a href="#s2"><b>02</b></a></td><td>class 碰不到訊號，<code>interface</code> + <code>virtual interface</code> 是唯一通道；<code>modport</code> 決定誰能寫</td></tr>
+      <tr><td><a href="#s3"><b>03</b></a></td><td>元件排成一棵樹，每層在自己的 <code>build_phase</code> 生小孩</td></tr>
+      <tr><td><a href="#s4"><b>04</b></a></td><td>資料流 8 站：物件 → 訊號 → 物件，轉換發生在 driver 和 monitor</td></tr>
+      <tr><td><a href="#s5"><b>05</b></a></td><td><code>uvm_object</code> 是資料、<code>uvm_component</code> 是結構，建構子與註冊巨集都不同</td></tr>
+      <tr><td><a href="#s6"><b>06</b></a></td><td>只有 run / main 是 task，其他 phase 不能耗時；objection 決定何時收工</td></tr>
+      <tr><td><a href="#s7"><b>07</b></a></td><td>元件不互相呼叫，一律 <code>port.connect(export)</code>；輸出有延遲就改用 FIFO</td></tr>
+      <tr><td><a href="#s8"><b>08</b></a></td><td>config_db 的型別、路徑、key 三者要一字不差</td></tr>
+      <tr><td><a href="#s9"><b>09</b></a></td><td>註冊 → <code>create()</code> → override，三者缺一就換不掉</td></tr>
+      <tr><td><a href="#s10"><b>10</b></a></td><td>scoreboard 說「有沒有錯」，coverage 說「有沒有測到」</td></tr>
+      <tr><td><a href="#s11"><b>11</b></a></td><td>換協定只動 transaction / driver / monitor / interface，架構不動</td></tr>
+      <tr><td><a href="#s12"><b>12</b></a></td><td>15 條新手地雷，卡住先翻這章</td></tr>
+      <tr><td><a href="#s13"><b>13</b></a></td><td>改了 <code>.sv</code> 一定要重編；沿 <code>SEQ→DRV→MON→SCR</code> 找斷點</td></tr>
     </tbody>
   </table>
   </div>
@@ -1832,7 +1832,7 @@ apb_setup_to_access_cp : cover property (apb_setup_to_access);</code></pre>
 </section>
 
 <footer>
-  <p>整理自 <code>UVM_LABS</code> lab1 ~ lab8 教材（UVM 1.2 / VCS）。範例程式碼皆節錄自各 Lab 的解答檔。</p>
+  <p>UVM 1.2 / VCS。文中範例皆節錄自可實際編譯執行的驗證環境。</p>
 </footer>
 
 </main>
