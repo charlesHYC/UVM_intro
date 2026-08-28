@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>UVM 基礎觀念筆記 — 架構、資料流、資料型態與新手地雷</title>
+<title>UVM 基礎觀念筆記 — 架構、資料流與資料型態</title>
 <meta name="description" content="給初學者的 UVM 入門：架構全景、資料怎麼流、有哪些資料型態、以及新手最常踩的坑。">
 <style>
 /* ---------- tokens：淺色為預設，深色只覆寫顏色 ---------- */
@@ -254,7 +254,7 @@ footer{border-top:1px solid var(--line); padding:28px 0 60px; color:var(--fg-fai
 <header class="top">
   <div class="wrap">
     <p class="eyebrow">SystemVerilog / UVM 1.2 · 初學者筆記</p>
-    <h1>UVM 基礎觀念<br>架構、資料流、資料型態與新手地雷</h1>
+    <h1>UVM 基礎觀念<br>架構、資料流與資料型態</h1>
     <p class="lede">
       這份筆記不逐條解釋語法，而是回答四個初學者最需要先搞懂的問題：
       <b>UVM 的架構長什麼樣</b>、
@@ -1814,7 +1814,7 @@ apb_setup_to_access_cp : cover property (apb_setup_to_access);</code></pre>
       <tr><td><a href="#s9"><b>09</b></a></td><td>註冊 → <code>create()</code> → override，三者缺一就換不掉</td></tr>
       <tr><td><a href="#s10"><b>10</b></a></td><td>scoreboard 說「有沒有錯」，coverage 說「有沒有測到」</td></tr>
       <tr><td><a href="#s11"><b>11</b></a></td><td>換協定只動 transaction / driver / monitor / interface，架構不動</td></tr>
-      <tr><td><a href="#s12"><b>12</b></a></td><td>15 條新手地雷，卡住先翻這章</td></tr>
+      <tr><td><a href="#s12"><b>12</b></a></td><td>15 條常見錯誤，卡住先翻這章</td></tr>
       <tr><td><a href="#s13"><b>13</b></a></td><td>改了 <code>.sv</code> 一定要重編；沿 <code>SEQ→DRV→MON→SCR</code> 找斷點</td></tr>
     </tbody>
   </table>
