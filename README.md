@@ -22,7 +22,7 @@ open UVM_intro/index.html          # macOS
 
 | 章 | 主題 | 重點 |
 |---|---|---|
-| 1 | 為什麼需要 UVM | 30 行的 hello world vs 420 行的完整 TB，多出來的東西買到了什麼 |
+| 1 | 為什麼需要 UVM | 30 行的 hello world vs 420 行的完整 TB，多出來的東西提供了什麼 |
 | 2 | Interface：class 與 module 的交界 | static module 世界 vs dynamic class 世界；`interface` / `modport` / `virtual interface` 是唯一通道 |
 | 3 | 架構全景圖 | test → env → agent → driver / sequencer / monitor，外掛 scoreboard 與 coverage |
 | **4** | **Datapath** | 一筆 transaction 從產生到被檢查走過的 8 站，每站標明「資料此刻在哪、是什麼型態」 |

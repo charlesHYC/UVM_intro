@@ -382,7 +382,7 @@ endprogram</code></pre>
   <p>
     同一個資料夾裡，測一顆<strong>加法器</strong>的 testbench 卻有四百多行、八個 class。
     多出來的四百行不是為了加法本身 —— 加法只有一行 <code>expected = in1 + in2;</code>。
-    那四百行買到的是四件事：
+    那四百行提供的是這四件事：
   </p>
 
   <div class="grid2">
@@ -1855,7 +1855,7 @@ apb_setup_to_access_cp : cover property (apb_setup_to_access);</code></pre>
   <table>
     <thead><tr><th>章</th><th>一句話</th></tr></thead>
     <tbody>
-      <tr><td><a href="#s1"><b>01</b></a></td><td>UVM 買到的是「可重用、可隨機、自動比對、可量化」四件事</td></tr>
+      <tr><td><a href="#s1"><b>01</b></a></td><td>UVM 提供的是可重用、可隨機、自動比對、可量化這四件事</td></tr>
       <tr><td><a href="#s2"><b>02</b></a></td><td>class 碰不到訊號，<code>interface</code> + <code>virtual interface</code> 是唯一通道；<code>modport</code> 決定誰能寫</td></tr>
       <tr><td><a href="#s3"><b>03</b></a></td><td>元件排成一棵樹，每層在自己的 <code>build_phase</code> 生小孩</td></tr>
       <tr><td><a href="#s4"><b>04</b></a></td><td>資料流 8 站：物件 → 訊號 → 物件，轉換發生在 driver 和 monitor</td></tr>
