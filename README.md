@@ -5,12 +5,16 @@
 
 ## 線上閱讀
 
-**<https://charleshyc.github.io/UVM_intro/>**
+**中文：<https://charleshyc.github.io/UVM_intro/>**
+
+**English: <https://charleshyc.github.io/UVM_intro/index_en.html>**
+
+兩份內容相同，側欄頂端可互相切換。
 
 > 若連結還打不開，到 repo 的 **Settings → Pages**，Source 選 `main` / `/ (root)`，
 > 等一兩分鐘即可。
 
-或者 clone 下來用瀏覽器直接開 `index.html` —— 這份文件是**單一自我包含的 HTML**，
+或者 clone 下來用瀏覽器直接開 `index.html`（英文版 `index_en.html`） —— 這份文件是**單一自我包含的 HTML**，
 inline CSS / JS / SVG，零外部資源，離線也能讀。
 
 ```bash

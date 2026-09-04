@@ -1,0 +1,2005 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UVM Foundations — Architecture, Data Flow and Data Types</title>
+<meta name="description" content="A beginner's introduction to UVM: the architecture at a glance, how data flows, what types it takes along the way, and the traps newcomers fall into most.">
+<style>
+/* ---------- tokens: light is the default; dark only overrides colours ---------- */
+:root{
+  --bg:#f7f7f5;
+  --surface:#ffffff;
+  --card:#fbfbf9;
+  --fg:#1c1c1a;
+  --fg-muted:#5c5c55;
+  --fg-faint:#8a8a80;
+  --line:#dedcd4;
+  --line-strong:#c2bfb3;
+  --accent:#b4541f;
+  --accent-soft:#fbeee6;
+  --blue:#2b5f9e;
+  --blue-soft:#e8f0f9;
+  --green:#3f7145;
+  --green-soft:#e9f2ea;
+  --purple:#6b4b8f;
+  --purple-soft:#f0eaf7;
+  --danger:#a33232;
+  --danger-soft:#fbeaea;
+  --code-bg:#f2f1ec;
+  --code-fg:#26261f;
+  --k:#9b2c6f;   /* keyword */
+  --t:#2b5f9e;   /* type */
+  --s:#3f7145;   /* string */
+  --c:#8a8a80;   /* comment */
+  --m:#b4541f;   /* macro */
+  --n:#6b4b8f;   /* number */
+  --shadow:0 1px 2px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.04);
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151513;
+    --surface:#1d1d1a;
+    --card:#222220;
+    --fg:#e8e6df;
+    --fg-muted:#a5a297;
+    --fg-faint:#78766d;
+    --line:#33332f;
+    --line-strong:#4a4a44;
+    --accent:#e08b53;
+    --accent-soft:#2e2119;
+    --blue:#7aaee0;
+    --blue-soft:#1a2430;
+    --green:#83bd8c;
+    --green-soft:#1a2620;
+    --purple:#b294d8;
+    --purple-soft:#241d30;
+    --danger:#e07b7b;
+    --danger-soft:#2e1c1c;
+    --code-bg:#1a1a18;
+    --code-fg:#ddd9d0;
+    --k:#e08fbe;
+    --t:#7aaee0;
+    --s:#93c99b;
+    --c:#78766d;
+    --m:#e0a06a;
+    --n:#b294d8;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151513; --surface:#1d1d1a; --card:#222220;
+  --fg:#e8e6df; --fg-muted:#a5a297; --fg-faint:#78766d;
+  --line:#33332f; --line-strong:#4a4a44;
+  --accent:#e08b53; --accent-soft:#2e2119;
+  --blue:#7aaee0; --blue-soft:#1a2430;
+  --green:#83bd8c; --green-soft:#1a2620;
+  --purple:#b294d8; --purple-soft:#241d30;
+  --danger:#e07b7b; --danger-soft:#2e1c1c;
+  --code-bg:#1a1a18; --code-fg:#ddd9d0;
+  --k:#e08fbe; --t:#7aaee0; --s:#93c99b; --c:#78766d; --m:#e0a06a; --n:#b294d8;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth; scroll-padding-top:1.5rem}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:var(--sans); font-size:16px; line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- layout ---------- */
+.wrap{max-width:880px; margin:0 auto; padding:0 26px}
+
+/* ---------- header ---------- */
+header.top{
+  border-bottom:1px solid var(--line);
+  background:var(--surface);
+  padding:56px 0 40px;
+  margin-bottom:44px;
+}
+.eyebrow{
+  font-size:.75rem; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--accent); font-weight:600; margin:0 0 14px;
+}
+h1{font-size:clamp(1.7rem,4vw,2.5rem); line-height:1.25; margin:0 0 16px; letter-spacing:-.01em}
+.lede{font-size:1.05rem; color:var(--fg-muted); max-width:62ch; margin:0}
+.meta{margin-top:22px; font-size:.85rem; color:var(--fg-faint); display:flex; flex-wrap:wrap; gap:8px 18px}
+.meta code{font-size:.82em}
+
+/* ---------- toc ---------- */
+nav.toc{
+  position:fixed; top:0; left:0; z-index:50;
+  width:264px; height:100vh; overflow-y:auto;
+  background:var(--surface); border-right:1px solid var(--line);
+  padding:64px 14px 32px;
+  transition:transform .24s cubic-bezier(.4,0,.2,1);
+}
+:root.toc-closed nav.toc{transform:translateX(-100%)}
+nav.toc h2{
+  font-size:.72rem; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--fg-faint); margin:0 0 12px; font-weight:600;
+}
+nav.toc .lang{
+  padding:6px 18px 12px; margin-bottom:6px;
+  border-bottom:1px solid var(--line);
+  font-size:12.5px; color:var(--fg-faint);
+}
+nav.toc .lang a{
+  display:inline; padding:0; border-left:0; color:var(--fg-muted);
+  text-decoration:none; border-bottom:1px solid var(--line-strong);
+}
+nav.toc .lang a::before{content:none}
+nav.toc .lang a:hover{color:var(--accent); background:none; border-bottom-color:var(--accent)}
+nav.toc ol{list-style:none; margin:0; padding:0; counter-reset:toc}
+nav.toc li{counter-increment:toc; margin:0}
+nav.toc a{
+  display:block; padding:5px 10px 5px 34px; position:relative;
+  color:var(--fg-muted); text-decoration:none; font-size:.875rem; line-height:1.45;
+  border-left:2px solid transparent; border-radius:0 4px 4px 0;
+}
+nav.toc a::before{
+  content:counter(toc); position:absolute; left:10px; top:5px;
+  font-size:.72rem; color:var(--fg-faint); font-variant-numeric:tabular-nums;
+}
+nav.toc a:hover{color:var(--fg); background:var(--card)}
+nav.toc a.active{color:var(--accent); border-left-color:var(--accent); font-weight:600}
+nav.toc a.active::before{color:var(--accent)}
+
+/* ---------- sections ---------- */
+main{min-width:0; padding-bottom:100px}
+section{scroll-margin-top:24px; margin-bottom:64px}
+h2.sec{
+  font-size:1.45rem; margin:0 0 6px; letter-spacing:-.01em;
+  padding-bottom:10px; border-bottom:2px solid var(--line-strong);
+}
+h2.sec .num{color:var(--accent); font-variant-numeric:tabular-nums; margin-right:.5em; font-weight:700}
+h3{font-size:1.05rem; margin:34px 0 10px; letter-spacing:-.005em}
+h4{font-size:.95rem; margin:22px 0 8px; color:var(--fg-muted)}
+p{margin:0 0 14px}
+ul,ol{margin:0 0 14px; padding-left:1.35em}
+li{margin-bottom:6px}
+strong{font-weight:650}
+a{color:var(--blue)}
+
+code{
+  font-family:var(--mono); font-size:.855em;
+  background:var(--code-bg); color:var(--code-fg);
+  padding:.12em .38em; border-radius:4px;
+  border:1px solid var(--line);
+  word-break:break-word;
+}
+
+/* ---------- code blocks ---------- */
+.code{margin:0 0 18px; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--code-bg)}
+.code .cap{
+  font-family:var(--mono); font-size:.72rem; color:var(--fg-faint);
+  padding:7px 12px; background:var(--surface); border-bottom:1px solid var(--line);
+  display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+}
+.code .cap b{color:var(--accent); font-weight:600}
+.code pre{margin:0; padding:14px 16px; overflow-x:auto; font-family:var(--mono);
+  font-size:.82rem; line-height:1.65; color:var(--code-fg)}
+.code pre code{background:none; border:none; padding:0; font-size:1em}
+.tok-k{color:var(--k)} .tok-t{color:var(--t)} .tok-s{color:var(--s)}
+.tok-c{color:var(--c); font-style:italic} .tok-m{color:var(--m)} .tok-n{color:var(--n)}
+
+/* ---------- tables ---------- */
+.tbl{overflow-x:auto; margin:0 0 20px; border:1px solid var(--line); border-radius:8px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.875rem; min-width:520px}
+th,td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:top}
+th{background:var(--card); font-weight:650; font-size:.8rem; letter-spacing:.02em; white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td code, th code{font-size:.85em; white-space:nowrap}
+
+/* ---------- callouts ---------- */
+.note{
+  border-left:3px solid var(--blue); background:var(--blue-soft);
+  padding:12px 16px; border-radius:0 6px 6px 0; margin:0 0 18px; font-size:.92rem;
+}
+.warn{
+  border-left:3px solid var(--accent); background:var(--accent-soft);
+  padding:12px 16px; border-radius:0 6px 6px 0; margin:0 0 18px; font-size:.92rem;
+}
+.note p:last-child,.warn p:last-child{margin-bottom:0}
+.note b,.warn b{color:var(--fg)}
+
+/* ---------- figures ---------- */
+figure{margin:0 0 24px; background:var(--surface); border:1px solid var(--line);
+  border-radius:10px; padding:18px 16px 12px; box-shadow:var(--shadow)}
+figure .svgbox{overflow-x:auto}
+figure svg{display:block; width:100%; min-width:520px; height:auto}
+figcaption{font-size:.8rem; color:var(--fg-faint); margin-top:12px; text-align:center; line-height:1.6}
+
+/* svg helpers */
+.s-box{fill:var(--card); stroke:var(--line-strong); stroke-width:1.4}
+.s-box-a{fill:var(--accent-soft); stroke:var(--accent); stroke-width:1.6}
+.s-box-b{fill:var(--blue-soft); stroke:var(--blue); stroke-width:1.4}
+.s-box-g{fill:var(--green-soft); stroke:var(--green); stroke-width:1.4}
+.s-box-p{fill:var(--purple-soft); stroke:var(--purple); stroke-width:1.4}
+.s-t{fill:var(--fg); font-family:var(--sans); font-size:13px; text-anchor:middle; dominant-baseline:middle}
+.s-t-mono{fill:var(--fg); font-family:var(--mono); font-size:12px; text-anchor:middle; dominant-baseline:middle}
+.s-sub{fill:var(--fg-muted); font-family:var(--mono); font-size:10.5px; text-anchor:middle; dominant-baseline:middle}
+.s-lbl{fill:var(--fg-muted); font-family:var(--sans); font-size:11px; text-anchor:middle; dominant-baseline:middle}
+.s-ln{stroke:var(--line-strong); stroke-width:1.5; fill:none}
+.s-ar{stroke:var(--accent); stroke-width:1.8; fill:none}
+.s-dash{stroke:var(--line-strong); stroke-width:1.2; stroke-dasharray:5 4; fill:none}
+.s-wave{stroke:var(--blue); stroke-width:1.8; fill:none}
+.s-num{fill:var(--accent); font-family:var(--mono); font-size:11px; font-weight:700; text-anchor:middle; dominant-baseline:middle}
+
+/* ---------- pitfall cards ---------- */
+.pit{
+  border:1px solid var(--line); border-left:3px solid var(--danger);
+  background:var(--surface); border-radius:0 8px 8px 0;
+  padding:14px 18px; margin:0 0 14px;
+}
+.pit h4{margin:0 0 8px; font-size:.98rem; color:var(--danger); display:flex; gap:10px; align-items:baseline}
+.pit h4 .idx{font-family:var(--mono); font-size:.8rem; color:var(--fg-faint); font-weight:600}
+.pit dl{margin:0; display:grid; grid-template-columns:auto minmax(0,1fr); gap:4px 12px; font-size:.9rem}
+.pit dt{color:var(--fg-faint); font-size:.78rem; padding-top:.28em; white-space:nowrap}
+.pit dd{margin:0}
+
+/* ---------- misc ---------- */
+.grid2{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin:0 0 20px}
+.mini{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:14px 16px}
+.mini h4{margin:0 0 8px; font-size:.92rem; color:var(--fg)}
+.mini p:last-child{margin-bottom:0}
+.mini ul{margin-bottom:0}
+.tag{display:inline-block; font-family:var(--mono); font-size:.7rem; padding:1px 7px;
+  border-radius:20px; border:1px solid currentColor; vertical-align:middle; margin-left:6px}
+.tag-obj{color:var(--purple)} .tag-cmp{color:var(--green)}
+.kbd{font-family:var(--mono); font-size:.8em; background:var(--card); border:1px solid var(--line-strong);
+  border-bottom-width:2px; border-radius:4px; padding:.1em .4em}
+footer{border-top:1px solid var(--line); padding:28px 0 60px; color:var(--fg-faint); font-size:.85rem}
+
+/* ---------- contents toggle ---------- */
+.toc-toggle{
+  position:fixed; top:12px; left:12px; z-index:60;
+  width:42px; height:42px; padding:0;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--surface); color:var(--fg);
+  border:1px solid var(--line-strong); border-radius:10px;
+  cursor:pointer; box-shadow:var(--shadow);
+  transition:background .15s, color .15s;
+}
+.toc-toggle:hover{background:var(--card); color:var(--accent)}
+.toc-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+:root.toc-closed .ico-close{display:none}
+:root:not(.toc-closed) .ico-open{display:none}
+
+.toc-backdrop{
+  position:fixed; inset:0; z-index:45;
+  background:rgba(0,0,0,.42);
+  opacity:0; pointer-events:none; transition:opacity .24s;
+}
+
+/* wide viewport: the sidebar sits in the left margin, covering nothing, needing no backdrop */
+@media (min-width:1440px){
+  .toc-backdrop{display:none}
+}
+/* narrow viewport: the sidebar floats over the content, with a backdrop and scroll lock */
+@media (max-width:1439px){
+  :root:not(.toc-closed) .toc-backdrop{opacity:1; pointer-events:auto}
+  :root:not(.toc-closed) body{overflow:hidden}
+}
+
+@media (max-width:900px){
+  header.top{padding:36px 0 28px; margin-bottom:28px}
+  .wrap{padding:0 18px}
+  nav.toc{width:min(84vw,300px)}
+}
+</style>
+</head>
+<body>
+
+<script>
+// decide the sidebar state before first paint, to avoid a flash on load
+(function(){
+  var open;
+  try { open = localStorage.getItem("uvm-toc-en"); } catch (e) {}
+  var isOpen = open ? open === "open" : window.innerWidth >= 1440;
+  if (!isOpen) document.documentElement.classList.add("toc-closed");
+})();
+</script>
+
+<button class="toc-toggle" id="tocToggle" aria-label="Toggle contents" aria-controls="toc" aria-expanded="true">
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
+       stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+    <g class="ico-open"><path d="M4 7h16M4 12h16M4 17h16"/></g>
+    <g class="ico-close"><path d="M6 6l12 12M18 6L6 18"/></g>
+  </svg>
+</button>
+
+<div class="toc-backdrop" id="tocBackdrop"></div>
+
+<header class="top">
+  <div class="wrap">
+    <p class="eyebrow">SystemVerilog / UVM 1.2 · beginner's notes</p>
+    <h1>UVM Foundations<br>Architecture, Data Flow and Data Types</h1>
+    <p class="lede">
+      These notes do not walk through the syntax line by line. They answer the four questions a beginner needs settled first:
+      <b>what the UVM architecture looks like</b>, <b>which stations a transaction passes through between being generated and being checked</b>, <b>what type it holds at each of them</b>, <b>and which details will stall you if you overlook them</b>.
+    </p>
+    <div class="meta">
+      <span>Main example DUT: <code>adder</code> (7-bit + 7-bit -> 8-bit, 1 cycle latency)</span>
+      <span>Extended example: <code>apb_slave</code></span>
+      <span>Simulator: VCS + <code>-ntb_opts uvm-1.2</code></span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc" id="toc">
+  <h2>Contents</h2>
+  <div class="lang"><a href="index.html">中文</a> &middot; English</div>
+  <ol>
+    <li><a href="#s1">Why UVM Exists</a></li>
+    <li><a href="#s2">Interface: the boundary between class and module</a></li>
+    <li><a href="#s3">The Architecture at a Glance</a></li>
+    <li><a href="#s4">Datapath: following one transaction</a></li>
+    <li><a href="#s5">The Data Types</a></li>
+    <li><a href="#s6">Phases</a></li>
+    <li><a href="#s7">TLM: how components connect</a></li>
+    <li><a href="#s8">config_db: the settings channel</a></li>
+    <li><a href="#s9">Factory and Override</a></li>
+    <li><a href="#s10">Functional Coverage</a></li>
+    <li><a href="#s11">What Changes with a Different Protocol</a></li>
+    <li><a href="#s12">Traps for Beginners</a></li>
+    <li><a href="#s13">Quick Reference for Running It</a></li>
+    <li><a href="#s14">Recap</a></li>
+  </ol>
+</nav>
+
+<main class="wrap">
+
+<!-- ============ 1 ============ -->
+<section id="s1">
+  <h2 class="sec"><span class="num">01</span>Why UVM Exists</h2>
+
+  <p>The smallest UVM testbench is thirty lines. All it does is print one line:</p>
+
+  <div class="code">
+    <div class="cap"><span>A minimal UVM testbench</span><b>hello_world_uvm.sv</b></div>
+<pre><code class="sv">program automatic test;
+
+  import uvm_pkg::*;
+  `include "uvm_macros.svh"        // without this line, `uvm_info / `uvm_component_utils do not exist
+
+  class hello_world extends uvm_test;
+    `uvm_component_utils(hello_world)          // register with the factory
+
+    function new(string name = "hello_world", uvm_component parent = null);
+      super.new(name, parent);
+    endfunction
+
+    virtual task run_phase(uvm_phase phase);
+      phase.raise_objection(this);             // hand up: I am not finished, do not end the simulation
+      #50;
+      `uvm_info("TEST", "Hello World!", UVM_MEDIUM)
+      phase.drop_objection(this);              // hand down: you may finish now
+    endtask
+  endclass
+
+  initial begin
+    run_test("hello_world");                   // start UVM and name the test to run
+  end
+
+endprogram</code></pre>
+  </div>
+
+  <p>
+    In the same folder, the testbench that tests one <strong>adder</strong> runs to four hundred lines across eight classes.
+    Those four hundred lines are not there for the addition &mdash; the addition is a single line, <code>expected = in1 + in2;</code>.
+    What they buy you is these four things:
+  </p>
+
+  <div class="grid2">
+    <div class="mini">
+      <h4>1. Separation of concerns</h4>
+      <p>Generating stimulus, driving pins, watching waveforms, judging right from wrong and counting coverage are split into five independent classes. Change one and the other four stay untouched.</p>
+    </div>
+    <div class="mini">
+      <h4>2. Randomisation</h4>
+      <p>Stimulus comes from <code>rand</code>, not hand-written. A different <code>seed</code> gives you a completely new set of vectors with no code change.</p>
+    </div>
+    <div class="mini">
+      <h4>3. Automatic checking</h4>
+      <p>The scoreboard computes the expected value itself and compares it against the DUT, so you are not staring at waveforms. When it disagrees it raises a <code>UVM_ERROR</code>.</p>
+    </div>
+    <div class="mini">
+      <h4>4. Something you can measure</h4>
+      <p>Coverage tells you whether you have tested enough. You can write "run until coverage reaches 50%" instead of "a hundred runs is probably enough".</p>
+    </div>
+  </div>
+
+  <div class="note">
+    <p><b>In one sentence: </b>UVM does not write your tests. It breaks the test environment <strong>into parts you can replace one at a time</strong>,
+    and fixes the conventions between them: how they talk (TLM), when they start (phases), how they are built (factory) and how they receive settings (config_db).
+    The next five chapters are about those four conventions.</p>
+  </div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section id="s2">
+  <h2 class="sec"><span class="num">02</span>Interface: the boundary between class and module</h2>
+
+  <p>
+    This is where beginners get confused most easily. A UVM testbench actually contains <strong>two entirely separate worlds</strong>,
+    with different lifetimes and different memory models.
+  </p>
+
+  <div class="tbl">
+  <table>
+    <thead><tr><th>&nbsp;</th><th>The module world (static)</th><th>The class world (dynamic)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>Members</b></td>
+        <td><code>module top</code>, <code>adder dut</code>, <code>adder_intf intf</code>, clock and reset generators</td>
+        <td><code>test</code>, <code>env_c</code>, <code>agent_c</code>, <code>driver_c</code>, <code>trans_c</code> …</td>
+      </tr>
+      <tr>
+        <td><b>When they exist</b></td>
+        <td>Fixed at compile time, present for the whole simulation, fixed in number</td>
+        <td>Created at run time with <code>create()</code>. You can make a thousand of them, or throw one away mid-run</td>
+      </tr>
+      <tr>
+        <td><b>Can they touch signals?</b></td>
+        <td>Yes, wired directly</td>
+        <td><b>No</b> &mdash; a class has no such thing as a pin</td>
+      </tr>
+      <tr>
+        <td><b>Can they be randomised?</b></td>
+        <td>No</td>
+        <td>Yes, <code>rand</code> + <code>constraint</code></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>
+    For the class world to drive the DUT there is exactly one channel: the <code>interface</code>.
+    <code>interface</code> itself lives in the module world (instantiated once inside <code>top</code>),
+    and what the class side holds is a <strong>reference to it</strong>, of type <code>virtual interface</code>.
+  </p>
+
+  <div class="code">
+    <div class="cap"><span>The interface and its three modports</span><b>adder_intf.sv</b></div>
+<pre><code class="sv">interface adder_intf (input logic clk, input logic rst_n);
+  logic [6:0] in1;
+  logic [6:0] in2;
+  logic [7:0] out;
+
+  modport dut (input in1, input in2, output out);              // DUT: takes inputs, produces an output
+
+  modport drv (output in1, output in2, input out,              // driver: may only write in1/in2
+               input clk, input rst_n);
+
+  modport mon (input in1, input in2, input out,                // monitor: observation only, all inputs
+               input clk, input rst_n);
+endinterface</code></pre>
+  </div>
+
+  <p>
+    <code>modport</code> is a <strong>table of directional permissions</strong>. The same wires, seen three different ways:
+  </p>
+  <ul>
+    <li><code>modport dut</code>: <code>in1/in2</code> are inputs and <code>out</code> is an output &mdash; from the DUT's point of view.</li>
+    <li><code>modport drv</code>: <code>in1/in2</code> becomes an output &mdash; the driver is the one doing the writing.</li>
+    <li><code>modport mon</code>: <strong>everything is an input</strong> &mdash; deliberately so. A monitor may only look, and the compiler blocks any code that tries to write a signal, so a monitor cannot accidentally contaminate the test.</li>
+  </ul>
+
+  <div class="warn">
+    <p><b>Where beginners get stuck most often:</b> the type the driver declares is not <code>virtual adder_intf</code>,
+    but <code>virtual adder_intf.drv</code> (with the modport). That type must match the one used in the
+    <code>uvm_config_db#(...)</code> call <strong>exactly</strong>,
+    or <code>get()</code> returns false and you get a <code>UVM_FATAL</code>. Chapter 8 covers this.</p>
+  </div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section id="s3">
+  <h2 class="sec"><span class="num">03</span>The Architecture at a Glance</h2>
+
+  <p>
+    UVM components form a tree. The root is <code>uvm_test_top</code> (<code>run_test("test")</code> builds it for you),
+    and each level below creates its children inside its own <code>build_phase</code>.
+  </p>
+
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 900 470" role="img" aria-label="The UVM component tree: env sits under test; agent, scoreboard and coverage sit under env; driver, sequencer and monitor sit under agent">
+      <!-- test -->
+      <rect class="s-box-a" x="350" y="16" width="200" height="46" rx="7"/>
+      <text class="s-t" x="450" y="32">test</text>
+      <text class="s-sub" x="450" y="49">uvm_test → uvm_test_top</text>
+
+      <line class="s-ln" x1="450" y1="62" x2="450" y2="96"/>
+
+      <!-- env -->
+      <rect class="s-box-b" x="350" y="96" width="200" height="46" rx="7"/>
+      <text class="s-t" x="450" y="112">env_c</text>
+      <text class="s-sub" x="450" y="129">uvm_env</text>
+
+      <!-- bus -->
+      <line class="s-ln" x1="450" y1="142" x2="450" y2="163"/>
+      <line class="s-ln" x1="215" y1="163" x2="775" y2="163"/>
+      <line class="s-ln" x1="215" y1="163" x2="215" y2="186"/>
+      <line class="s-ln" x1="555" y1="163" x2="555" y2="186"/>
+      <line class="s-ln" x1="775" y1="163" x2="775" y2="186"/>
+
+      <!-- agent -->
+      <rect class="s-box-g" x="20" y="186" width="390" height="46" rx="7"/>
+      <text class="s-t" x="215" y="202">agent_c</text>
+      <text class="s-sub" x="215" y="219">uvm_agent&nbsp;&nbsp;is_active = UVM_ACTIVE / UVM_PASSIVE</text>
+
+      <!-- scoreboard -->
+      <rect class="s-box-p" x="460" y="186" width="190" height="46" rx="7"/>
+      <text class="s-t" x="555" y="202">scoreboard_c</text>
+      <text class="s-sub" x="555" y="219">uvm_scoreboard</text>
+
+      <!-- coverage -->
+      <rect class="s-box-p" x="680" y="186" width="190" height="46" rx="7"/>
+      <text class="s-t" x="775" y="202">cov_coll_c</text>
+      <text class="s-sub" x="775" y="219">uvm_subscriber #(trans_c)</text>
+
+      <!-- agent children bus -->
+      <line class="s-ln" x1="215" y1="232" x2="215" y2="256"/>
+      <line class="s-ln" x1="87"  y1="256" x2="347" y2="256"/>
+      <line class="s-ln" x1="87"  y1="256" x2="87"  y2="280"/>
+      <line class="s-ln" x1="215" y1="256" x2="215" y2="280"/>
+      <line class="s-ln" x1="347" y1="256" x2="347" y2="280"/>
+
+      <rect class="s-box" x="27" y="280" width="120" height="46" rx="7"/>
+      <text class="s-t" x="87" y="296">driver_c</text>
+      <text class="s-sub" x="87" y="313">uvm_driver</text>
+
+      <rect class="s-box" x="152" y="280" width="126" height="46" rx="7"/>
+      <text class="s-t" x="215" y="296">sequencer</text>
+      <text class="s-sub" x="215" y="313">uvm_sequencer</text>
+
+      <rect class="s-box" x="287" y="280" width="120" height="46" rx="7"/>
+      <text class="s-t" x="347" y="296">monitor_c</text>
+      <text class="s-sub" x="347" y="313">uvm_monitor</text>
+
+      <!-- boundary -->
+      <line class="s-dash" x1="20" y1="360" x2="880" y2="360"/>
+      <text class="s-lbl" x="742" y="348" style="fill:var(--accent)">&uarr; class world&nbsp;&nbsp;&nbsp;&darr; module world</text>
+
+      <!-- module world -->
+      <rect class="s-box" x="27" y="386" width="380" height="44" rx="7"/>
+      <text class="s-t-mono" x="217" y="408">adder_intf intf (.clk, .rst_n)</text>
+
+      <rect class="s-box" x="460" y="386" width="190" height="44" rx="7"/>
+      <text class="s-t-mono" x="555" y="408">adder dut</text>
+
+      <rect class="s-box" x="680" y="386" width="190" height="44" rx="7"/>
+      <text class="s-t-mono" x="775" y="408">module top</text>
+
+      <!-- vif links -->
+      <path class="s-ar" d="M87,326 L87,386" marker-end="url(#a1)"/>
+      <path class="s-ar" d="M347,326 L347,386" marker-end="url(#a1)"/>
+      <text class="s-lbl" x="140" y="352" style="fill:var(--accent); font-family:var(--mono)">vif.drv</text>
+      <text class="s-lbl" x="398" y="352" style="fill:var(--accent); font-family:var(--mono)">vif.mon</text>
+
+      <path class="s-ar" d="M420,408 L455,408" marker-end="url(#a1)"/>
+
+      <defs>
+        <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+        </marker>
+      </defs>
+    </svg>
+    </div>
+    <figcaption>
+      The component tree, in the shape a UVM testbench almost always takes. Above the dashed line is class, below it is module;
+      <code>driver</code> and <code>monitor</code> each hold a virtual interface so they can reach across.
+    </figcaption>
+  </figure>
+
+  <h3>What each level is responsible for</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Level</th><th>Responsibility</th><th>Replaceable?</th></tr></thead>
+    <tbody>
+      <tr><td><code>test</code></td><td>Decides what this run does: how many transactions, the coverage goal, whether to override anything</td><td>One test per scenario; the most frequently swapped</td></tr>
+      <tr><td><code>env</code></td><td>Assembles agent, scoreboard and coverage, and wires them together</td><td>Reused whole; only touched when the DUT changes</td></tr>
+      <tr><td><code>agent</code></td><td>A complete agent for one protocol interface: generate, drive, observe</td><td>One agent per protocol (an APB agent, an AXI agent, and so on)</td></tr>
+      <tr><td><code>sequencer</code></td><td>Arbitration and queueing between sequence and driver</td><td>Almost never written by hand; use <code>uvm_sequencer#(T)</code></td></tr>
+      <tr><td><code>driver</code></td><td>Translates a transaction into <b>signal timing</b> (this is where the protocol details live)</td><td>Must change with the protocol</td></tr>
+      <tr><td><code>monitor</code></td><td>Turns <b>signal timing</b> back into a transaction and broadcasts it</td><td>Must change with the protocol</td></tr>
+      <tr><td><code>scoreboard</code></td><td>Computes the expected value, compares it against the DUT's actual output, tallies PASS/FAIL</td><td>Must change when the DUT's function changes (the reference model)</td></tr>
+      <tr><td><code>coverage</code></td><td>Samples and tallies which scenarios have been exercised</td><td>Changes when the verification goal changes</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note">
+    <p><b>Active vs. passive:</b><code>uvm_agent</code> has a built-in <code>is_active</code> field. When active it builds driver + sequencer + monitor; when passive it builds <strong>only the monitor</strong> (pure observation, no stimulus).
+    You do this with a check in the agent's build and connect phases:</p>
+  </div>
+
+  <div class="code">
+    <div class="cap"><span>Deciding active or passive</span><b>agent_c</b></div>
+<pre><code class="sv">virtual function void build_phase(uvm_phase phase);
+  super.build_phase(phase);
+  if (is_active == UVM_ACTIVE) begin              // only an active agent needs to drive stimulus
+    m_drv = driver_c::type_id::create("m_drv", this);
+    m_sqr = uvm_sequencer#(trans_c)::type_id::create("m_sqr", this);
+  end
+  m_mon = monitor_c::type_id::create("m_mon", this);   // the monitor is always built
+endfunction
+
+virtual function void connect_phase(uvm_phase phase);
+  super.connect_phase(phase);
+  if (is_active == UVM_ACTIVE)
+    m_drv.seq_item_port.connect(m_sqr.seq_item_export);   // do not connect what was never built, or you get a null handle
+endfunction</code></pre>
+  </div>
+</section>
+
+<!-- ============ 4 ============ -->
+<section id="s4">
+  <h2 class="sec"><span class="num">04</span>Datapath: following one transaction</h2>
+
+  <p>
+    This is the heart of these notes. What follows tracks <strong>one</strong> <code>trans_c</code>, 
+    from being randomised into existence, driven onto the pins, computed by the DUT, observed on the way back, to being compared &mdash; eight stations in all.
+  </p>
+
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 900 420" role="img" aria-label="The UVM data flow: a sequence produces a transaction, which passes through the sequencer to the driver; the driver uses the interface to drive the DUT; the monitor samples the interface and broadcasts to the scoreboard and coverage">
+      <!-- class world label -->
+      <text class="s-lbl" x="60" y="18" style="text-anchor:start">the class world (objects in memory)</text>
+
+      <!-- 1 sequence -->
+      <rect class="s-box-g" x="20" y="40" width="122" height="48" rx="7"/>
+      <text class="s-t" x="81" y="57">sequence_c</text>
+      <text class="s-sub" x="81" y="74">body()</text>
+      <circle cx="20" cy="40" r="11" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text class="s-num" x="20" y="40">1</text>
+
+      <!-- 2 sequencer -->
+      <rect class="s-box" x="182" y="40" width="122" height="48" rx="7"/>
+      <text class="s-t" x="243" y="57">sequencer</text>
+      <text class="s-sub" x="243" y="74">arbitrate / queue</text>
+      <circle cx="182" cy="40" r="11" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text class="s-num" x="182" y="40">2</text>
+
+      <!-- 3 driver -->
+      <rect class="s-box-b" x="344" y="40" width="122" height="48" rx="7"/>
+      <text class="s-t" x="405" y="57">driver_c</text>
+      <text class="s-sub" x="405" y="74">run_phase</text>
+      <circle cx="344" cy="40" r="11" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text class="s-num" x="344" y="40">3</text>
+
+      <!-- 6 monitor -->
+      <rect class="s-box-b" x="556" y="40" width="122" height="48" rx="7"/>
+      <text class="s-t" x="617" y="57">monitor_c</text>
+      <text class="s-sub" x="617" y="74">run_phase</text>
+      <circle cx="556" cy="40" r="11" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text class="s-num" x="556" y="40">6</text>
+
+      <!-- 7 scoreboard / 8 coverage -->
+      <rect class="s-box-p" x="742" y="14" width="140" height="44" rx="7"/>
+      <text class="s-t" x="812" y="30">scoreboard_c</text>
+      <text class="s-sub" x="812" y="46">write() compare</text>
+      <circle cx="742" cy="14" r="11" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text class="s-num" x="742" y="14">8</text>
+
+      <rect class="s-box-p" x="742" y="76" width="140" height="44" rx="7"/>
+      <text class="s-t" x="812" y="92">cov_coll_c</text>
+      <text class="s-sub" x="812" y="108">covgrp.sample()</text>
+
+      <!-- arrows -->
+      <path class="s-ar" d="M142,64 L178,64" marker-end="url(#a2)"/>
+      <text class="s-lbl" x="162" y="102" style="font-family:var(--mono); font-size:9.5px">finish_item</text>
+      <path class="s-ar" d="M304,64 L340,64" marker-end="url(#a2)"/>
+      <text class="s-lbl" x="322" y="102" style="font-family:var(--mono); font-size:9.5px">get_next_item</text>
+
+      <path class="s-ar" d="M678,64 L700,64 L700,36 L738,36" marker-end="url(#a2)"/>
+      <path class="s-ar" d="M700,64 L700,98 L738,98" marker-end="url(#a2)"/>
+      <text class="s-lbl" x="706" y="124" style="font-family:var(--mono); font-size:9.5px">m_mon_port.write()</text>
+      <circle cx="700" cy="152" r="11" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text class="s-num" x="700" y="152">7</text>
+
+      <!-- interface band -->
+      <rect x="20" y="252" width="862" height="34" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+      <text class="s-t-mono" x="451" y="269">adder_intf&nbsp;&nbsp;&nbsp;in1[6:0]&nbsp;&nbsp;in2[6:0]&nbsp;&nbsp;out[7:0]&nbsp;&nbsp;clk&nbsp;&nbsp;rst_n</text>
+
+      <line class="s-dash" x1="20" y1="222" x2="882" y2="222"/>
+      <text class="s-lbl" x="800" y="222" style="fill:var(--accent)">the virtual interface boundary</text>
+
+      <!-- driver down -->
+      <path class="s-ar" d="M405,88 L405,248" marker-end="url(#a2)"/>
+      <text class="s-lbl" x="470" y="150" style="font-family:var(--mono); font-size:10px">vif.in1 &lt;= tr.in1;</text>
+      <text class="s-lbl" x="470" y="166" style="font-family:var(--mono); font-size:10px">vif.in2 &lt;= tr.in2;</text>
+      <circle cx="405" cy="196" r="11" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text class="s-num" x="405" y="196">4</text>
+
+      <!-- monitor up -->
+      <path class="s-ar" d="M617,252 L617,92" marker-end="url(#a2)"/>
+      <text class="s-lbl" x="680" y="180" style="font-family:var(--mono); font-size:10px">sample in1/in2/out</text>
+
+      <!-- DUT -->
+      <rect class="s-box" x="360" y="330" width="180" height="52" rx="7"/>
+      <text class="s-t" x="450" y="347">adder (DUT)</text>
+      <text class="s-sub" x="450" y="365">out &lt;= in1 + in2 (next cycle)</text>
+      <circle cx="360" cy="330" r="11" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text class="s-num" x="360" y="330">5</text>
+
+      <path class="s-ar" d="M400,286 L400,326" marker-end="url(#a2)"/>
+      <path class="s-ar" d="M500,326 L500,290" marker-end="url(#a2)"/>
+      <text class="s-lbl" x="360" y="308" style="font-family:var(--mono); font-size:10px">in</text>
+      <text class="s-lbl" x="540" y="308" style="font-family:var(--mono); font-size:10px">out</text>
+
+      <text class="s-lbl" x="120" y="356" style="text-anchor:start">the module world (actual wires)</text>
+
+      <defs>
+        <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+        </marker>
+      </defs>
+    </svg>
+    </div>
+    <figcaption>The complete path of one transaction. Steps 1&ndash;3 pass an object around, 4&ndash;6 are signals moving, and 7&ndash;8 return to objects.</figcaption>
+  </figure>
+
+  <h3>Station by station: where the data is and what type it holds</h3>
+
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Station</th><th>What happens</th><th>What the data is at this moment</th></tr></thead>
+    <tbody>
+      <tr><td><b>①</b> sequence</td>
+        <td><code>create()</code> creates a <code>trans_c</code>, <code>randomize()</code> fills the <code>in1/in2</code></td>
+        <td><code>trans_c</code> object; only the input fields are meaningful, <code>out</code> is still meaningless</td></tr>
+      <tr><td><b>②</b> sequencer</td>
+        <td><code>finish_item()</code> hands the object to the sequencer; if the driver is still busy it <b>blocks here</b></td>
+        <td>A handle to the same object is passed along (nothing is copied)</td></tr>
+      <tr><td><b>③</b> driver</td>
+        <td><code>seq_item_port.get_next_item(m_trans)</code> receives the handle</td>
+        <td>The same object; the driver can now read its fields</td></tr>
+      <tr><td><b>④</b> crosses the boundary</td>
+        <td><code>@(posedge clk)</code>, then <code>vif.in1 &lt;= m_trans.in1;</code></td>
+        <td><b>object -> signal</b>. From here on the data is a <code>logic</code> level</td></tr>
+      <tr><td><b>⑤</b> DUT</td>
+        <td><code>always_ff</code> writes, on the next posedge, <code>in1+in2</code> into <code>out</code></td>
+        <td>Pure signal, <b>with a one-cycle delay</b></td></tr>
+      <tr><td><b>⑥</b> monitor</td>
+        <td>Remember this cycle's <code>in1/in2</code> and read <code>out</code> only on the next cycle, so the two halves form one transaction</td>
+        <td><b>signal -> object</b>.<code>create()</code> creates a <b>brand new</b> <code>trans_c</code></td></tr>
+      <tr><td><b>⑦</b> broadcast</td>
+        <td><code>m_mon_port.write(m_trans)</code> sends it to every subscriber at once</td>
+        <td>A handle to the same object goes to N receivers</td></tr>
+      <tr><td><b>⑧</b> checks</td>
+        <td>the scoreboard computes <code>expected = in1+in2</code> and compares; coverage samples</td>
+        <td>Once read, nobody holds the object and it goes to the garbage collector</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>The driver: one half of the conversion</h3>
+  <div class="code">
+    <div class="cap"><span>Take an item from the sequencer, drive the pins, report completion</span><b>driver_c</b></div>
+<pre><code class="sv">virtual task run_phase(uvm_phase phase);
+  trans_c m_trans;
+
+  adder_vif.in1 &lt;= '0;                    // hold the signals at zero during reset
+  adder_vif.in2 &lt;= '0;
+  wait (adder_vif.rst_n === 1'b1);        // start work only once reset is released
+
+  forever begin
+    seq_item_port.get_next_item(m_trans);       // <- blocking: waits here when there is nothing
+    @(posedge adder_vif.clk);                   //    line up with the clock
+    adder_vif.in1 &lt;= m_trans.in1;               //    non-blocking assignment, to avoid a race
+    adder_vif.in2 &lt;= m_trans.in2;
+    `uvm_info("DRV", $sformatf("Drive in1=%0d, in2=%0d",
+              m_trans.in1, m_trans.in2), UVM_LOW)
+    seq_item_port.item_done();                  // <- tell the sequencer this one is finished
+  end
+endtask</code></pre>
+  </div>
+
+  <div class="warn">
+    <p><b><code>get_next_item()</code> and <code>item_done()</code> must come in pairs.</b>
+    Leave out <code>item_done()</code> and the sequencer believes the driver never finished, so the second transaction is never issued and the simulation looks hung.</p>
+  </div>
+
+  <h3>The monitor: the other half of the conversion, and where timing is easiest to get wrong</h3>
+  <div class="code">
+    <div class="cap"><span>Handling the one-cycle latency and the NBA race</span><b>monitor_c</b></div>
+<pre><code class="sv">virtual task run_phase(uvm_phase phase);
+  trans_c m_trans;
+  logic [6:0] in1_q, in2_q;      // hold this cycle's inputs
+  int idx = 0;
+
+  wait (adder_vif.rst_n === 1'b1);
+  @(posedge adder_vif.clk);
+    #1;                          // * let the NBA region settle before reading, dodging the sampling race
+
+  forever begin
+    in1_q = adder_vif.in1;       // cycle N: remember the inputs
+    in2_q = adder_vif.in2;
+    @(posedge adder_vif.clk);
+    #1;
+    m_trans = trans_c::type_id::create($sformatf("mon_trans_%0d", idx++), this);
+    m_trans.in1 = in1_q;         // cycle N's inputs
+    m_trans.in2 = in2_q;
+    m_trans.out = adder_vif.out; // cycle N+1's output <- this is the matching half
+    m_mon_port.write(m_trans);   // broadcast
+  end
+endtask</code></pre>
+  </div>
+
+  <div class="note">
+    <p><b>Why the <code>#1</code>?</b>
+    The DUT uses <code>always_ff</code> with the non-blocking assignment <code>&lt;=</code> to update <code>out</code>, and that update happens in the same time step's
+    <b>NBA region</b>. If the monitor wakes at <code>@(posedge clk)</code>
+    and reads immediately, it may catch the value from before the update, and the execution order is not guaranteed to repeat (a race).
+    Adding a <code>#1</code> (or switching to a clocking block) guarantees a settled value.</p>
+    <p><b>Why hold <code>in1_q/in2_q</code>?</b>
+    Because the DUT has one cycle of latency: <code>in1/in2</code> is on cycle N and the matching <code>out</code> is on cycle N+1.
+    Sample both on the same cycle and you pair this transaction's input with the previous transaction's output, turning the whole scoreboard red.</p>
+  </div>
+</section>
+
+<!-- ============ 5 ============ -->
+<section id="s5">
+  <h2 class="sec"><span class="num">05</span>The Data Types</h2>
+
+  <h3>The two families: uvm_object vs. uvm_component</h3>
+  <p>Every UVM class grows from <code>uvm_object</code>, but it forks early into two branches that behave nothing alike:</p>
+
+  <div class="tbl">
+  <table>
+    <thead><tr><th>&nbsp;</th><th><code>uvm_object</code> family<span class="tag tag-obj">Data</span></th><th><code>uvm_component</code> family<span class="tag tag-cmp">Structure</span></th></tr></thead>
+    <tbody>
+      <tr><td><b>Typified by</b></td>
+        <td><code>uvm_sequence_item</code> (a transaction)<br><code>uvm_sequence</code></td>
+        <td><code>uvm_driver</code>, <code>uvm_monitor</code>, <code>uvm_scoreboard</code>, <code>uvm_subscriber</code>, <code>uvm_agent</code>, <code>uvm_env</code>, <code>uvm_test</code>, <code>uvm_sequencer</code></td></tr>
+      <tr><td><b>Does it have a place?</b></td>
+        <td>No. Like a letter: passed around, copied, thrown away</td>
+        <td>Yes. It has a fixed path in the component tree, such as <code>uvm_test_top.m_env.m_agt.m_drv</code></td></tr>
+      <tr><td><b>Lifetime</b></td><td>Short. One per transaction, recycled after use</td><td>Long. Once <code>build_phase</code> has built it, it exists for the whole simulation</td></tr>
+      <tr><td><b>Constructor</b></td>
+        <td><code>function new(string name = "");</code><br>One argument only</td>
+        <td><code>function new(string name, uvm_component parent);</code><br><b>One extra: parent</b></td></tr>
+      <tr><td><b>Registration macro</b></td>
+        <td><code>`uvm_object_utils(T)</code><br>or <code>`uvm_object_utils_begin/end</code></td>
+        <td><code>`uvm_component_utils(T)</code></td></tr>
+      <tr><td><b>Does it have phases?</b></td><td>No</td><td>Yes: build / connect / run / report / final ...</td></tr>
+      <tr><td><b>Can it be randomised?</b></td><td>Yes (<code>rand</code> + <code>constraint</code>)</td><td>Never used that way</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="warn">
+    <p><b>What using the wrong macro looks like:</b> put <code>`uvm_component_utils</code> on a transaction,
+    or <code>`uvm_object_utils</code> on a component, and compilation blows up on a constructor signature mismatch
+    (the macro expands to that family's <code>create()</code> implementation). When you see a pile of odd
+    <code>new()</code> errors, check that these two macros are paired correctly first.</p>
+  </div>
+
+  <h3>The transaction: a container for data</h3>
+  <div class="code">
+    <div class="cap"><span>A typical transaction</span><b>trans_c</b></div>
+<pre><code class="sv">class trans_c extends uvm_sequence_item;
+  rand logic [6:0] in1;        // rand: randomize() will fill this in
+  rand logic [6:0] in2;
+       logic [7:0] out;        // no rand: this comes from the DUT, we do not generate it
+
+  function new(string name = "");
+    super.new(name);
+  endfunction
+
+  `uvm_object_utils_begin(trans_c)      // only the begin/end form accepts field macros
+    `uvm_field_int(in1, UVM_DEFAULT)
+    `uvm_field_int(in2, UVM_DEFAULT)
+    `uvm_field_int(out, UVM_DEFAULT)
+  `uvm_object_utils_end
+endclass</code></pre>
+  </div>
+
+  <p>Three design decisions worth noting:</p>
+  <ul>
+    <li><b><code>out</code> has no <code>rand</code></b>: the output is a result we observe, not stimulus we decide.
+      Adding <code>rand</code> would let randomize scribble over it, overwriting whatever the monitor captured.</li>
+    <li><b>the width <code>[6:0] + [6:0] → [7:0]</code></b>: two 7-bit values reach 127+127 = 254,
+      which needs 8 bits. <b>The extra bit is deliberate</b> &mdash; it prevents overflow so the scoreboard's
+      <code>expected = in1 + in2</code> agrees with the DUT. Give <code>out</code> only 7 bits and
+      both sides truncate: the test passes, but you are no longer testing the carry.</li>
+    <li><b><code>logic</code> rather than <code>bit</code></b>: <code>logic</code> is four-valued (0/1/X/Z), while
+      <code>bit</code> is two-valued (0/1). Only <code>logic</code> lets you see the bug where a wire
+      is never driven at all (X); with <code>bit</code>, an undriven wire reads as 0 and the bug hides.</li>
+  </ul>
+
+  <h4><code>`uvm_field_int</code> gives you what</h4>
+  <p>Once the fields are registered, UVM generates these methods for you:</p>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Method</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>print()</code></td><td>Prints the whole transaction as a table (very useful when debugging)</td></tr>
+      <tr><td><code>copy()</code> / <code>clone()</code></td><td>Deep-copies a transaction (essential before queueing one for comparison)</td></tr>
+      <tr><td><code>compare()</code></td><td>Compares two, field by field</td></tr>
+      <tr><td><code>sprint()</code> / <code>convert2string()</code></td><td>Turns it into a string for the log</td></tr>
+      <tr><td><code>pack()</code> / <code>unpack()</code></td><td>Flattens it into a bit stream</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Parameterised types: what goes inside the angle brackets</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Declaration</th><th>What the parameter means</th></tr></thead>
+    <tbody>
+      <tr><td><code>uvm_sequence #(trans_c)</code></td><td>Which item this sequence produces</td></tr>
+      <tr><td><code>uvm_sequencer #(trans_c)</code></td><td>Which item this sequencer carries</td></tr>
+      <tr><td><code>uvm_driver #(trans_c)</code></td><td>Which item this driver receives (it sets the type of <code>seq_item_port</code> type)</td></tr>
+      <tr><td><code>uvm_analysis_port #(trans_c)</code></td><td>Which item this port broadcasts</td></tr>
+      <tr><td><code>uvm_analysis_imp #(trans_c, scoreboard_c)</code></td><td><b>Two</b> parameters: which item it receives, plus <b>who</b> implements <code>write()</code></td></tr>
+      <tr><td><code>uvm_subscriber #(trans_c)</code></td><td>Has a built-in <code>analysis_export</code>, so you only override <code>write()</code></td></tr>
+      <tr><td><code>uvm_tlm_analysis_fifo #(trans_c)</code></td><td>A buffering receiver; read from it with <code>get()</code></td></tr>
+      <tr><td><code>virtual adder_intf.drv</code></td><td>A reference to the interface, <b>with the modport</b></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3><code>new()</code> vs <code>type_id::create()</code></h3>
+  <p>Both create objects, but they mean very different things:</p>
+  <div class="grid2">
+    <div class="mini">
+      <h4><code>obj = new("name")</code></h4>
+      <p>Calls the constructor directly. What comes out is <b>always</b> the class you wrote; the factory never sees it.</p>
+      <p style="color:var(--fg-muted)">Use it only for things that need no override, such as TLM ports, exports and FIFOs:
+      <code>m_mon_port = new("m_mon_port", this);</code></p>
+    </div>
+    <div class="mini">
+      <h4><code>obj = T::type_id::create("name", this)</code></h4>
+      <p>Creates through the factory. The factory checks for an override first and, if there is one, <b>substitutes a different class</b>.</p>
+      <p style="color:var(--fg-muted)">Every transaction, sequence and component should use this. It is the prerequisite for changing behaviour without changing the structure (see chapter 9).</p>
+    </div>
+  </div>
+
+  <div class="note">
+    <p><b>The difference in arguments:</b><code>create()</code> for a component takes <code>this</code> as the parent
+    (<code>create("m_drv", this)</code>); for an object it usually does not
+    (<code>create("m_trans_0")</code>) &mdash; an object has no place in the tree.</p>
+  </div>
+
+  <h3>SystemVerilog: a few things you must keep straight</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Declaration</th><th>Meaning</th><th>When it is used in UVM</th></tr></thead>
+    <tbody>
+      <tr><td><code>=</code> (blocking)</td><td>Takes effect immediately</td><td>Arithmetic inside a class; storing a monitor's captured values into a transaction</td></tr>
+      <tr><td><code>&lt;=</code> (non-blocking)</td><td>Queued to the NBA region before taking effect</td><td><b>Always use this when a driver drives a signal</b>, so it does not fight the DUT's <code>always_ff</code></td></tr>
+      <tr><td><code>==</code></td><td>Logical comparison; returns X when it meets X or Z</td><td>Avoid where you can</td></tr>
+      <tr><td><code>===</code></td><td>Four-valued identity; X equals X, and the result is always 0 or 1</td><td><b>Always use this for scoreboard comparisons and for waiting on reset</b></td></tr>
+      <tr><td><code>wait (expr)</code></td><td>Proceeds once the condition holds (and does not wait if it already does)</td><td><code>wait (vif.rst_n === 1'b1)</code></td></tr>
+      <tr><td><code>@(posedge clk)</code></td><td>Always waits for the next rising edge</td><td>Lining up with the clock</td></tr>
+      <tr><td><code>function</code></td><td><b>Cannot consume time</b></td><td>build/connect/report/write() are all functions</td></tr>
+      <tr><td><code>task</code></td><td>May consume time</td><td><code>run_phase</code>, <code>main_phase</code>, and a sequence's <code>body()</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ============ 6 ============ -->
+<section id="s6">
+  <h2 class="sec"><span class="num">06</span>Phases: what runs first, what runs after</h2>
+
+  <p>
+    UVM lays out a fixed order for you. You never call these yourself; you just <strong>override</strong> the part you want to take a hand in,
+    and UVM calls it at the right moment.
+  </p>
+
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 640 430" role="img" aria-label="UVM phase order: build, connect, end_of_elaboration, start_of_simulation, run/main, extract check report, final">
+      <line class="s-ln" x1="46" y1="24" x2="46" y2="392" stroke-width="2"/>
+
+      <!-- 1 build -->
+      <circle cx="46" cy="34" r="7" fill="var(--green)" stroke="none"/>
+      <text class="s-t-mono" x="70" y="30" style="text-anchor:start; font-size:13px">build_phase</text>
+      <text class="s-sub" x="70" y="48" style="text-anchor:start">function · top-down · create() the children, config_db::get()</text>
+
+      <!-- 2 connect -->
+      <circle cx="46" cy="94" r="7" fill="var(--green)" stroke="none"/>
+      <text class="s-t-mono" x="70" y="90" style="text-anchor:start; font-size:13px">connect_phase</text>
+      <text class="s-sub" x="70" y="108" style="text-anchor:start">function · bottom-up · connect TLM, connect seq_item_port</text>
+
+      <!-- 3 eoe -->
+      <circle cx="46" cy="154" r="7" fill="var(--green)" stroke="none"/>
+      <text class="s-t-mono" x="70" y="150" style="text-anchor:start; font-size:13px">end_of_elaboration_phase</text>
+      <text class="s-sub" x="70" y="168" style="text-anchor:start">function · the tree is fixed; the last chance to check it</text>
+
+      <!-- 4 sos -->
+      <circle cx="46" cy="214" r="7" fill="var(--green)" stroke="none"/>
+      <text class="s-t-mono" x="70" y="210" style="text-anchor:start; font-size:13px">start_of_simulation_phase</text>
+      <text class="s-sub" x="70" y="228" style="text-anchor:start">function · often where uvm_root::get().print_topology() goes</text>
+
+      <!-- 5 run -->
+      <rect x="26" y="252" width="588" height="72" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
+      <circle cx="46" cy="270" r="7" fill="var(--accent)" stroke="none"/>
+      <text class="s-t-mono" x="70" y="266" style="text-anchor:start; font-size:13px; fill:var(--accent)">run_phase / main_phase&nbsp;&nbsp;* the only phase that consumes simulation time</text>
+      <text class="s-sub" x="70" y="286" style="text-anchor:start">task · every component's run_phase is forked at once</text>
+      <text class="s-sub" x="70" y="304" style="text-anchor:start">the phase ends only once every objection has been dropped</text>
+
+      <!-- 6 report -->
+      <circle cx="46" cy="348" r="7" fill="var(--green)" stroke="none"/>
+      <text class="s-t-mono" x="70" y="344" style="text-anchor:start; font-size:13px">extract / check / report_phase</text>
+      <text class="s-sub" x="70" y="362" style="text-anchor:start">function · bottom-up · print the PASS/FAIL tally and the coverage figure</text>
+
+      <!-- 7 final -->
+      <circle cx="46" cy="392" r="7" fill="var(--green)" stroke="none"/>
+      <text class="s-t-mono" x="70" y="392" style="text-anchor:start; font-size:13px">final_phase</text>
+
+      <text class="s-lbl" x="18" y="200" transform="rotate(-90 18 200)" style="fill:var(--fg-faint)">time &rarr;</text>
+    </svg>
+    </div>
+    <figcaption>Phase order. To see it for yourself, add a <code>`uvm_info</code> marker to each phase and the log prints in exactly this order.</figcaption>
+  </figure>
+
+  <h3>Two rules worth memorising</h3>
+
+  <div class="grid2">
+    <div class="mini">
+      <h4>Rule 1: a function phase cannot delay</h4>
+      <p><code>build_phase</code>, <code>connect_phase</code>, <code>report_phase</code>... are all
+      <code>function void</code>. Put a <code>#10</code> or <code>@(posedge clk)</code>
+      inside one and you get <code>Illegal time-consuming statement</code>.</p>
+      <p style="color:var(--fg-muted)">Anything that waits belongs in <code>run_phase</code> / <code>main_phase</code> (a task).</p>
+    </div>
+    <div class="mini">
+      <h4>Rule 2: build runs top-down, connect runs bottom-up</h4>
+      <p><code>build_phase</code> is top-down: build the test, the test builds the env, the env builds the agent...
+      because a parent must exist before its child.</p>
+      <p style="color:var(--fg-muted)"><code>connect_phase</code> goes the other way, bottom-up:
+      every child must already exist before anything can be connected.</p>
+    </div>
+  </div>
+
+  <h3>Objections: deciding when the simulation ends</h3>
+  <p>
+    UVM has no idea how long your test should run. <strong>An objection is simply a counter</strong>:
+    while anyone still has a hand raised against finishing, the run phase continues; the moment it reaches zero, UVM packs up.
+  </p>
+
+  <div class="code">
+    <div class="cap"><span>Using an objection to bracket the period where work is happening</span><b>test::main_phase</b></div>
+<pre><code class="sv">virtual task main_phase(uvm_phase phase);
+  sequence_c m_seq;
+  int iter = 0;
+
+  phase.raise_objection(this);            // <- hand up: do not finish yet
+
+  // keep sending sequences until coverage hits the target or the iteration cap
+  while (m_env.m_cov.covgrp.get_coverage() &lt; cov_target &amp;&amp; iter &lt; max_iter) begin
+    m_seq = sequence_c::type_id::create($sformatf("seq_%0d", iter), this);
+    m_seq.start(m_env.m_agt.m_sqr);       // <- attach the sequence to the sequencer and run it
+    iter++;
+  end
+
+  phase.phase_done.set_drain_time(this, 20ns);   // 20 ns of slack for whatever is still in the pipeline
+
+  phase.drop_objection(this);             // <- hand down: we can pack up
+endtask</code></pre>
+  </div>
+
+  <div class="warn">
+    <p><b>Forget <code>raise_objection</code> looks like this:</b> the simulation ends at 0 ns and the log is nearly empty &mdash; just UVM's header and the report summary. It looks like a broken build, but it is simply that nobody objected, so UVM packed up immediately.</p>
+    <p><b><code>set_drain_time</code> is for:</b> after the last stimulus reaches the DUT, the DUT still needs a few cycles to produce a result. Stop the instant the objection drops and the last few <code>out</code> never arrive: the monitor captures too few and the scoreboard compares too few. Leave a drain time so the pipeline empties.</p>
+  </div>
+
+  <div class="note">
+    <p><b><code>run_phase</code> and <code>main_phase</code> &mdash; what is the difference?</b>
+    <code>run_phase</code> is the master switch; UVM also divides it into twelve sub-phases:
+    <code>pre_reset → reset → post_reset → pre_configure → configure → post_configure
+    → pre_main → main → post_main → pre_shutdown → shutdown → post_shutdown</code>,
+    which run <code>run_phase</code> <b>in parallel</b> with it. The usual convention: things that run continuously, like the driver and monitor, go in <code>run_phase</code>, while a test's flow with a definite beginning and end goes in <code>main_phase</code>.</p>
+  </div>
+</section>
+
+<!-- ============ 7 ============ -->
+<section id="s7">
+  <h2 class="sec"><span class="num">07</span>TLM: how components connect</h2>
+
+  <p>
+    UVM components <strong>never call each other's methods directly</strong>. They connect through TLM ports.
+    The benefit is that the monitor need not know who is listening &mdash; add a coverage collector today and the monitor does not change by a single line.
+  </p>
+
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 900 300" role="img" aria-label="The three TLM connection styles: analysis_port to analysis_imp, to a subscriber's analysis_export, and to a tlm_analysis_fifo">
+      <!-- A -->
+      <rect x="12" y="16" width="282" height="266" rx="9" fill="none" stroke="var(--line)" stroke-width="1.2"/>
+      <text class="s-t" x="153" y="40" style="font-weight:600">A · analysis_imp</text>
+      <rect class="s-box-b" x="36" y="66" width="110" height="42" rx="6"/>
+      <text class="s-t-mono" x="91" y="87">monitor</text>
+      <rect class="s-box-p" x="162" y="66" width="110" height="42" rx="6"/>
+      <text class="s-t-mono" x="217" y="87">scoreboard</text>
+      <path class="s-ar" d="M148,87 L158,87" marker-end="url(#a3)"/>
+      <text class="s-sub" x="153" y="130">m_mon_port.connect(m_scr_imp)</text>
+      <text class="s-sub" x="153" y="160" style="fill:var(--fg)">the scoreboard implements write() itself</text>
+      <text class="s-sub" x="153" y="180">the monitor calls write() and it executes synchronously, at once</text>
+      <text class="s-sub" x="153" y="212" style="fill:var(--green)">suits: outputs that can be compared immediately</text>
+      <text class="s-sub" x="153" y="232">uvm_analysis_imp #(trans_c, scoreboard_c)</text>
+
+      <!-- B -->
+      <rect x="309" y="16" width="282" height="266" rx="9" fill="none" stroke="var(--line)" stroke-width="1.2"/>
+      <text class="s-t" x="450" y="40" style="font-weight:600">B · uvm_subscriber</text>
+      <rect class="s-box-b" x="333" y="66" width="110" height="42" rx="6"/>
+      <text class="s-t-mono" x="388" y="87">monitor</text>
+      <rect class="s-box-p" x="459" y="66" width="110" height="42" rx="6"/>
+      <text class="s-t-mono" x="514" y="87">cov_coll</text>
+      <path class="s-ar" d="M445,87 L455,87" marker-end="url(#a3)"/>
+      <text class="s-sub" x="450" y="130">m_mon_port.connect(m_cov.analysis_export)</text>
+      <text class="s-sub" x="450" y="160" style="fill:var(--fg)">has a built-in analysis_export; nothing to new</text>
+      <text class="s-sub" x="450" y="180">you only override write()</text>
+      <text class="s-sub" x="450" y="212" style="fill:var(--green)">suits: coverage, log recorders</text>
+      <text class="s-sub" x="450" y="232">uvm_subscriber #(trans_c)</text>
+
+      <!-- C -->
+      <rect x="606" y="16" width="282" height="266" rx="9" fill="none" stroke="var(--line)" stroke-width="1.2"/>
+      <text class="s-t" x="747" y="40" style="font-weight:600">C · analysis_fifo</text>
+      <rect class="s-box-b" x="620" y="66" width="82" height="42" rx="6"/>
+      <text class="s-t-mono" x="661" y="87" style="font-size:11px">driver/mon</text>
+      <rect class="s-box-a" x="714" y="66" width="60" height="42" rx="6"/>
+      <text class="s-t-mono" x="744" y="87" style="font-size:11px">FIFO</text>
+      <rect class="s-box-p" x="786" y="66" width="88" height="42" rx="6"/>
+      <text class="s-t-mono" x="830" y="87" style="font-size:11px">scoreboard</text>
+      <path class="s-ar" d="M704,87 L710,87" marker-end="url(#a3)"/>
+      <path class="s-ar" d="M776,87 L782,87" marker-end="url(#a3)"/>
+      <text class="s-sub" x="747" y="130">connect(m_scr.drv_fifo.analysis_export)</text>
+      <text class="s-sub" x="747" y="160" style="fill:var(--fg)">write() stores into the FIFO first (never blocks the caller)</text>
+      <text class="s-sub" x="747" y="180">the scoreboard reads it with get() in run_phase</text>
+      <text class="s-sub" x="747" y="212" style="fill:var(--green)">suits: pipelined DUTs, or any DUT with latency</text>
+      <text class="s-sub" x="747" y="232">uvm_tlm_analysis_fifo #(trans_c)</text>
+
+      <defs>
+        <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+        </marker>
+      </defs>
+    </svg>
+    </div>
+    <figcaption>Three ways to write the receiving end. What they share: the sending end is always <code>uvm_analysis_port #(trans_c)</code>,
+    and the direction of connection is always <b>port.connect(export/imp)</b>.</figcaption>
+  </figure>
+
+  <h3>connections all go in connect_phase</h3>
+  <div class="code">
+    <div class="cap"><span>One port broadcasting to two receivers</span><b>env_c</b></div>
+<pre><code class="sv">virtual function void connect_phase(uvm_phase phase);
+  super.connect_phase(phase);
+  m_agt.m_mon.m_mon_port.connect(m_scr.m_scr_imp);          // → scoreboard
+  m_agt.m_mon.m_mon_port.connect(m_cov.analysis_export);    // → coverage
+endfunction</code></pre>
+  </div>
+
+  <p>
+    <code>uvm_analysis_port</code> is <strong>one-to-many</strong>:
+    there are as many subscribers as you made connections. One call to <code>write()</code> runs every subscriber's
+    <code>write()</code> in turn. And because <code>write()</code> is a <code>function</code>,
+    <strong>it consumes no time</strong>, so the broadcast completes instantaneously.
+  </p>
+
+  <h3>What separates architecture A (imp) from architecture C (FIFO)</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>&nbsp;</th><th>A: analysis_imp</th><th>C: analysis_fifo</th></tr></thead>
+    <tbody>
+      <tr><td><b>Where the data comes from</b></td><td>One path only, the monitor; a single transaction carries both in and out</td><td>Two paths: the driver sends the inputs, the monitor sends the outputs</td></tr>
+      <tr><td><b>When the comparison happens</b></td><td><code>write()</code> &mdash; compared the instant it is called</td><td><code>run_phase</code>, once <code>get()</code> has data from both sides</td></tr>
+      <tr><td><b>Where it lives</b></td><td><code>virtual function void write(trans_c t)</code></td><td><code>virtual task run_phase(...)</code> (it must be able to block)</td></tr>
+      <tr><td><b>Extra work required</b></td><td>None</td><td>the driver needs an extra <code>uvm_analysis_port</code>, and before <code>item_done()</code> it must call <code>write()</code></td></tr>
+      <tr><td><b>When to use it</b></td><td>A simple DUT, where the monitor can capture in and out together</td><td>A deeply pipelined DUT, out-of-order results, or in and out separated by many cycles</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="code">
+    <div class="cap"><span>The heart of the FIFO scoreboard</span><b>scoreboard_c (FIFO version)</b></div>
+<pre><code class="sv">uvm_tlm_analysis_fifo #(trans_c) drv_fifo;   // holds the inputs sent by the driver
+uvm_tlm_analysis_fifo #(trans_c) mon_fifo;   // holds the outputs sent by the monitor
+
+virtual task run_phase(uvm_phase phase);
+  trans_c drv_tr, mon_tr;
+  logic [7:0] expected;
+
+  forever begin
+    drv_fifo.get(drv_tr);                 // blocking: waits here when there is nothing
+    mon_fifo.get(mon_tr);                 // one from each side, paired automatically
+    expected = reference_model(drv_tr);   // expected = drv_tr.in1 + drv_tr.in2
+
+    if (mon_tr.out === expected) pass_cnt++;
+    else `uvm_error("SCR", $sformatf("FAIL: expected %0d, got %0d", expected, mon_tr.out))
+  end
+endtask</code></pre>
+  </div>
+
+  <div class="note">
+    <p><b>Note that <code>get()</code> is a task, not a function.</b>
+    It blocks until the FIFO has something, so it can only live inside <code>run_phase</code>.
+    That is why the FIFO scoreboard has no <code>write()</code> &mdash; it has been replaced by <code>run_phase</code>.</p>
+  </div>
+</section>
+
+<!-- ============ 8 ============ -->
+<section id="s8">
+  <h2 class="sec"><span class="num">08</span>config_db: handing things in from outside</h2>
+
+  <p>
+    The driver needs a virtual interface, but the interface lives in <code>module top</code>.
+    The driver is created by the factory, so there is no way to pass the interface in through its constructor.
+    <code>uvm_config_db</code> solves exactly this, with a <strong>global dictionary</strong>: one side calls <code>set</code>, the other calls <code>get</code>.
+  </p>
+
+  <div class="code">
+    <div class="cap"><span>The set side: in top, before run_test()</span><b>module top</b></div>
+<pre><code class="sv">initial begin
+  uvm_config_db#(virtual adder_intf.drv)::set(null,
+      "uvm_test_top.m_env.m_agt.m_drv", "adder_vif", intf);
+
+  uvm_config_db#(virtual adder_intf.mon)::set(null,
+      "uvm_test_top.m_env.m_agt.m_mon", "adder_vif", intf);
+
+  run_test("test");        // set must always come before run_test
+end</code></pre>
+  </div>
+
+  <div class="code">
+    <div class="cap"><span>The get side: in build_phase</span><b>driver_c</b></div>
+<pre><code class="sv">virtual adder_intf.drv adder_vif;          // the type must match the set side exactly
+
+virtual function void build_phase(uvm_phase phase);
+  super.build_phase(phase);
+  if (!uvm_config_db#(virtual adder_intf.drv)::get(this, "", "adder_vif", adder_vif))
+    `uvm_fatal("DRV", "Unable to get interface adder_vif (drv)")
+endfunction</code></pre>
+  </div>
+
+  <h3>The four arguments, one by one</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Position</th><th>Set side</th><th>Get side</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><code>null</code></td><td><code>this</code></td>
+        <td>The starting context. <code>null</code> = start from <code>uvm_root</code> (a module is not in the component tree)</td></tr>
+      <tr><td>2</td><td><code>"uvm_test_top.m_env.m_agt.m_drv"</code></td><td><code>""</code></td>
+        <td>The path relative to the context. The get side already passes <code>this</code>, so an empty path means "me"</td></tr>
+      <tr><td>3</td><td><code>"adder_vif"</code></td><td><code>"adder_vif"</code></td>
+        <td><b>The field name</b> (a string key); it must match exactly on both sides</td></tr>
+      <tr><td>4</td><td><code>intf</code></td><td><code>adder_vif</code></td>
+        <td>On set it is the value to store; on get it is the variable to store into (passed by reference)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="warn">
+    <p><b>Three ways to make <code>get()</code> fail, all with the same symptom: <code>UVM_FATAL</code>: </b></p>
+    <ol style="margin-bottom:0">
+      <li><b>Mismatched types</b> &mdash; set uses <code>virtual adder_intf</code> while get uses
+        <code>virtual adder_intf.drv</code>. As far as <code>uvm_config_db</code> is concerned these are <b>two entirely different dictionaries</b>,
+        and what goes into A never comes out of B. This is the most common one and the hardest to spot.</li>
+      <li><b>A wrong path</b> &mdash; for instance <code>m_agt</code> typed as <code>m_agent</code>,
+        or forgetting the leading <code>uvm_test_top.</code> (<code>run_test()</code> always names the test instance this).</li>
+      <li><b>A wrong key</b> &mdash; <code>"adder_vif"</code> typed as <code>"adder_intf"</code>.</li>
+    </ol>
+  </div>
+
+  <div class="note">
+    <p><b>Why set twice?</b> Because the driver and the monitor need different modports
+    (<code>.drv</code> is writable, <code>.mon</code> is read-only), and different types need separate entries.
+    This one is easy to miss.</p>
+    <p><b>The path accepts wildcards.</b><code>"*"</code> matches any level, so
+    <code>set(null, "*", "adder_vif", intf)</code> lets every component find it &mdash;
+    quick, but dangerous: it hands the monitor a writable handle too.</p>
+  </div>
+</section>
+
+<!-- ============ 9 ============ -->
+<section id="s9">
+  <h2 class="sec"><span class="num">09</span>Factory and Override</h2>
+
+  <p>
+    The factory is a registry that exchanges a string for an object. It exists for exactly one reason:
+    <strong>so you can replace one class throughout the system without touching any existing code</strong>.
+  </p>
+
+  <h3>Three steps</h3>
+  <ol>
+    <li><b>Register</b> &mdash; <code>`uvm_object_utils(T)</code> / <code>`uvm_component_utils(T)</code>.
+      A class that is not registered does not exist as far as the factory is concerned.</li>
+    <li><b>Create with <code>create()</code></b> &mdash; rather than <code>new()</code>. That is the interception point.</li>
+    <li><b>Set an override</b> &mdash; before any <code>create()</code> <b>happens</b>.</li>
+  </ol>
+
+  <div class="code">
+    <div class="cap"><span>Swapping every trans_c in the system for a constrained version, without touching the architecture</span><b>test::build_phase</b></div>
+<pre><code class="sv">// (1) derive a new transaction and add one constraint
+class trans_in1_3_c extends trans_c;
+  `uvm_object_utils(trans_in1_3_c)          // * must be registered, or the override does nothing
+
+  function new(string name = "");
+    super.new(name);
+  endfunction
+
+  constraint in1_eq_3 { in1 == 3; }         // pin in1 to 3
+endclass
+
+// (2) set the override at the very top of the test's build_phase
+virtual function void build_phase(uvm_phase phase);
+  set_type_override_by_type(
+    trans_c::get_type(),                    // what was going to be created
+    trans_in1_3_c::get_type()               // what actually gets created
+  );
+
+  super.build_phase(phase);                 // <- the override must come before this line
+  m_env = env_c::type_id::create("m_env", this);
+
+  uvm_factory::get().print();               // (3) print the type-override table to confirm
+endfunction</code></pre>
+  </div>
+
+  <p>
+    Once that is set, the line <code>sequence_c</code> inside <code>trans_c::type_id::create(...)</code>
+    <strong> has not changed by a single character</strong>, yet what comes out is a <code>trans_in1_3_c</code>.
+    Every <code>in1</code> in the log becomes 3, the scoreboard still passes throughout
+    (nothing is broken), but the coverage on <code>cp1</code> collapses to a single bin.
+  </p>
+
+  <div class="warn">
+    <p><b>Two reasons an override does nothing:</b></p>
+    <ol style="margin-bottom:0">
+      <li><b>the new class has no <code>`uvm_object_utils</code></b> &mdash; the factory has never heard of the type.</li>
+      <li><b>somewhere the code uses <code>new()</code> rather than <code>create()</code></b> &mdash;
+        that site quietly creates the old type, and you get the baffling behaviour where some transactions are swapped and others are not.</li>
+    </ol>
+  </div>
+
+  <div class="note">
+    <p><b>Two scopes of override:</b></p>
+    <ul style="margin-bottom:0">
+      <li><code>set_type_override_by_type(A, B)</code> &mdash; <b>system-wide</b>: every A becomes a B.</li>
+      <li><code>set_inst_override_by_type(A, B, "path")</code> &mdash; swaps only the one instance <b>under the given path</b>.
+        You might swap the driver of one particular agent and leave every other alone.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 10 ============ -->
+<section id="s10">
+  <h2 class="sec"><span class="num">10</span>Functional coverage: have you tested enough?</h2>
+
+  <p>
+    The scoreboard answers "is it wrong". Coverage answers "<strong>did we ever test it</strong>".
+    Both passing does not mean verification is done &mdash; you may simply never have sent the input that would fail.
+  </p>
+
+  <div class="code">
+    <div class="cap"><span>The covergroup lives in a subscriber</span><b>cov_coll_c</b></div>
+<pre><code class="sv">class cov_coll_c extends uvm_subscriber #(trans_c);
+  `uvm_component_utils(cov_coll_c)
+
+  trans_c m_trans;                    // * the covergroup samples from this member variable
+
+  covergroup covgrp;
+    option.per_instance = 1;          // tally each instance separately
+
+    cp1: coverpoint m_trans.in1 {
+      bins in1_min    = {0};          // a single value
+      bins in1_max    = {127};
+      bins in1_low[]  = {[1:63]};     // [] = expand automatically into 63 bins
+      bins in1_high[] = {[64:126]};
+    }
+    cp2: coverpoint m_trans.in2 { /* as above */ }
+    cp3: coverpoint m_trans.out {
+      bins low  = {[0:127]};
+      bins high = {[128:254]};        // did we ever test a case that carries
+    }
+    cp1xcp2: cross cp1, cp2;          // cross: have the combinations been walked
+  endgroup
+
+  function new(string name = "", uvm_component parent);
+    super.new(name, parent);
+    covgrp = new();                   // * the covergroup must be constructed in new()
+  endfunction
+
+  virtual function void write(trans_c t);   // called once for every transaction the monitor broadcasts
+    m_trans = t;                            // update the member variable first
+    covgrp.sample();                        // then sample
+  endfunction
+endclass</code></pre>
+  </div>
+
+  <div class="warn">
+    <p><b>The order matters.</b><code>covgrp.sample()</code> captures the <code>m_trans</code>
+    value this member variable holds <b>at that instant</b>. Call <code>sample()</code> before <code>m_trans = t;</code>,
+    and every sample is one transaction behind.</p>
+    <p><b><code>covgrp = new()</code> belongs in the constructor.</b> Putting it in <code>build_phase</code>
+    also works, but forget it and you have a null handle that explodes on the first <code>sample()</code>.</p>
+  </div>
+
+  <h3>Using coverage as the stopping condition</h3>
+  <p>
+    The better approach is not "run N times" but "<strong>run until coverage reaches the target</strong>":
+  </p>
+  <div class="code">
+    <div class="cap"><span>A coverage-driven loop</span><b>test::main_phase</b></div>
+<pre><code class="sv">while (m_env.m_cov.covgrp.get_coverage() &lt; cov_target &amp;&amp; iter &lt; max_iter) begin
+  m_seq = sequence_c::type_id::create($sformatf("seq_%0d", iter), this);
+  m_seq.start(m_env.m_agt.m_sqr);
+  iter++;
+end
+
+if (iter &gt;= max_iter)
+  `uvm_warning("TEST", "Hit max_iter before reaching coverage target")</code></pre>
+  </div>
+
+  <div class="tbl">
+  <table>
+    <thead><tr><th>API</th><th>Returns</th></tr></thead>
+    <tbody>
+      <tr><td><code>covgrp.get_coverage()</code></td><td>The coverage of this <b>type</b>, overall (all instances combined)</td></tr>
+      <tr><td><code>covgrp.get_inst_coverage(covered, total)</code></td><td>The coverage of this <b>instance</b>, with output arguments giving how many bins hit out of how many</td></tr>
+      <tr><td><code>covgrp.cp1.get_coverage()</code></td><td>The coverage of a single coverpoint (to find which one is holding you back)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note">
+    <p><b><code>max_iter</code> safety net is essential:</b>
+    If the constraints pin the input down too hard (fixing <code>in1</code> to a single value, say),
+    coverage will <b>never</b> reach the target, and without <code>max_iter</code> you have an infinite loop.
+    Seeing that <code>Hit max_iter</code> warning usually means the constraints and the coverage goal contradict each other.</p>
+  </div>
+</section>
+
+<!-- ============ 11 ============ -->
+<section id="s11">
+  <h2 class="sec"><span class="num">11</span>What changes with a different protocol</h2>
+
+  <p>
+    Swap the DUT from an adder to an APB slave and the whole UVM architecture &mdash; test / env / agent /
+    sequencer / TLM connections / phases / factory &mdash; <strong>does not change by one line</strong>.
+    Only these four things change:
+  </p>
+
+  <div class="tbl">
+  <table>
+    <thead><tr><th>What changes</th><th>adder</th><th>APB slave</th></tr></thead>
+    <tbody>
+      <tr><td><b>Interface signals</b></td>
+        <td><code>in1 / in2 / out</code></td>
+        <td><code>psel penable pwrite paddr pwdata prdata pready pslverr</code></td></tr>
+      <tr><td><b>Transaction fields</b></td>
+        <td><code>rand in1, in2</code>;<code>out</code></td>
+        <td><code>rand pwrite, paddr, pwdata</code>;<code>prdata, pslverr</code>, plus an address constraint</td></tr>
+      <tr><td><b>Driver timing</b></td>
+        <td>Drive it on one clock edge and you are done</td>
+        <td><b>Two phases</b>: setup then access, and it must also wait for <code>pready</code></td></tr>
+      <tr><td><b>Monitor sampling condition</b></td>
+        <td>Every cycle is one transaction</td>
+        <td>Only <code>psel &amp;&amp; penable &amp;&amp; pready</code> is the one cycle that counts as a transaction</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 900 292" role="img" aria-label="APB timing: the IDLE, SETUP and ACCESS phases, with a pready wait state">
+      <text class="s-sub" x="128" y="50" style="text-anchor:end; font-family:var(--mono); font-size:12px; fill:var(--fg)">clk</text>
+      <text class="s-sub" x="128" y="104" style="text-anchor:end; font-family:var(--mono); font-size:12px; fill:var(--fg)">psel</text>
+      <text class="s-sub" x="128" y="158" style="text-anchor:end; font-family:var(--mono); font-size:12px; fill:var(--fg)">penable</text>
+      <text class="s-sub" x="128" y="212" style="text-anchor:end; font-family:var(--mono); font-size:12px; fill:var(--fg)">pready</text>
+
+      <!-- phase guides -->
+      <line class="s-dash" x1="300" y1="24" x2="300" y2="252"/>
+      <line class="s-dash" x1="380" y1="24" x2="380" y2="252"/>
+      <line class="s-dash" x1="540" y1="24" x2="540" y2="252"/>
+
+      <rect x="300" y="4" width="80" height="18" fill="var(--blue-soft)" stroke="var(--blue)" stroke-width="1"/>
+      <text class="s-sub" x="340" y="13" style="fill:var(--blue)">SETUP</text>
+      <rect x="380" y="4" width="160" height="18" fill="var(--green-soft)" stroke="var(--green)" stroke-width="1"/>
+      <text class="s-sub" x="460" y="13" style="fill:var(--green)">ACCESS</text>
+      <text class="s-sub" x="220" y="13" style="fill:var(--fg-faint)">IDLE</text>
+      <text class="s-sub" x="700" y="13" style="fill:var(--fg-faint)">IDLE</text>
+
+      <!-- clk -->
+      <path class="s-wave" d="M140,64 L140,36 L180,36 L180,64 L220,64 L220,36 L260,36 L260,64 L300,64 L300,36 L340,36 L340,64 L380,64 L380,36 L420,36 L420,64 L460,64 L460,36 L500,36 L500,64 L540,64 L540,36 L580,36 L580,64 L620,64 L620,36 L660,36 L660,64 L700,64 L700,36 L740,36 L740,64 L780,64 L780,36 L820,36 L820,64 L860,64"/>
+      <!-- psel -->
+      <path class="s-wave" d="M140,118 L300,118 L300,90 L540,90 L540,118 L860,118"/>
+      <!-- penable -->
+      <path class="s-wave" d="M140,172 L380,172 L380,144 L540,144 L540,172 L860,172"/>
+      <!-- pready -->
+      <path class="s-wave" d="M140,226 L460,226 L460,198 L540,198 L540,226 L860,226"/>
+
+      <text class="s-sub" x="420" y="243" style="fill:var(--green); font-size:10px">wait state</text>
+
+      <text class="s-sub" x="540" y="249" style="fill:var(--accent); font-size:13px">▲</text>
+      <text class="s-sub" x="140" y="274" style="text-anchor:start; fill:var(--accent)">the edge where psel &amp;&amp; penable &amp;&amp; pready all hold is a completed transfer; the monitor samples here</text>
+    </svg>
+    </div>
+    <figcaption>An APB transfer: PSEL rises into setup, PENABLE rises on the next cycle into access,
+    and it completes only once PREADY = 1. PADDR / PWRITE / PWDATA must not change in between.</figcaption>
+  </figure>
+
+  <div class="code">
+    <div class="cap"><span>The driver: two-phase timing plus wait states</span><b>driver_c (APB)</b></div>
+<pre><code class="sv">// setup phase: PSEL=1, PENABLE=0, present address, direction and write data
+@(posedge apb_vif.clk);
+apb_vif.psel    &lt;= 1'b1;
+apb_vif.penable &lt;= 1'b0;
+apb_vif.pwrite  &lt;= m_trans.pwrite;
+apb_vif.paddr   &lt;= m_trans.paddr;
+apb_vif.pwdata  &lt;= m_trans.pwdata;
+
+// access phase: PENABLE only rises on the next cycle
+@(posedge apb_vif.clk);
+apb_vif.penable &lt;= 1'b1;
+
+// wait states: keep waiting while PREADY=0, and do not change PADDR/PWRITE/PWDATA meanwhile
+while (!apb_vif.pready)
+  @(posedge apb_vif.clk);</code></pre>
+  </div>
+
+  <div class="code">
+    <div class="cap"><span>The monitor: sample only when a transfer really completes</span><b>monitor_c (APB)</b></div>
+<pre><code class="sv">if (apb_vif.psel &amp;&amp; apb_vif.penable &amp;&amp; apb_vif.pready) begin
+  s_pwrite = apb_vif.pwrite;      // (a) latch the stimulus fields first
+  s_paddr  = apb_vif.paddr;
+  s_pwdata = apb_vif.pwdata;
+
+  @(posedge apb_vif.clk);
+  #1;                             // (b) let the prdata/pslverr the DUT wrote with NBA settle
+
+  m_trans = trans_c::type_id::create($sformatf("mon_trans_%0d", idx++), this);
+  m_trans.pwrite  = s_pwrite;
+  m_trans.paddr   = s_paddr;
+  m_trans.pwdata  = s_pwdata;
+  m_trans.prdata  = apb_vif.prdata;   // (c) then add the DUT's response
+  m_trans.pslverr = apb_vif.pslverr;
+end</code></pre>
+  </div>
+
+  <h3>Assertions and cover properties: a layer outside UVM</h3>
+  <p>
+    Protocol rules can live in the driver, but SVA can also <strong>pin them to the signals</strong> directly,
+    written in <code>module top</code> (outside the class world). Anyone who breaks one is caught immediately &mdash;
+    including your own driver, when you get it wrong.
+  </p>
+
+  <div class="code">
+    <div class="cap"><span>A protocol assertion plus a cover property</span><b>module top (APB)</b></div>
+<pre><code class="sv">// assertion: PENABLE may only rise after the previous cycle was already a setup phase
+property apb_penable_after_psel;
+  @(posedge clk) disable iff (!rst_n)
+    $rose(intf.penable) |-&gt;
+      (intf.psel &amp;&amp; $past(intf.psel &amp;&amp; !intf.penable));
+endproperty
+
+apb_penable_after_psel_a : assert property (apb_penable_after_psel)
+  else `uvm_error("APB_ASSERT", "PENABLE asserted without previous APB setup phase")
+
+// cover property: confirm the test really walked the setup -> access path
+property apb_setup_to_access;
+  @(posedge clk) disable iff (!rst_n)
+    (intf.psel &amp;&amp; !intf.penable) ##1 (intf.psel &amp;&amp; intf.penable);
+endproperty
+
+apb_setup_to_access_cp : cover property (apb_setup_to_access);</code></pre>
+  </div>
+
+  <div class="note">
+    <p><b><code>assert</code> and <code>cover</code> are two sides of one coin:</b>
+    <code>assert property</code> says this <b>must never</b> happen, while
+    <code>cover property</code> says this <b>confirms it did</b> happen at least once.
+    Write only the assert and an assertion that never fires passes forever &mdash;
+    it looks safe, but you never tested it at all.<code>disable iff (!rst_n)</code>
+    exists to stop an invalid state during reset being reported as a violation.</p>
+  </div>
+</section>
+
+<!-- ============ 12 ============ -->
+<section id="s12">
+  <h2 class="sec"><span class="num">12</span>Traps for Beginners</h2>
+
+  <p>Every entry below is something you will actually hit. Start here when you are stuck.</p>
+
+  <div class="pit">
+    <h4><span class="idx">01</span>You edited a .sv file but only ran <code>make run</code>, and nothing changed</h4>
+    <dl>
+      <dt>Symptom</dt><dd>You definitely changed the code, yet the log is identical to last time.</dd>
+      <dt>Cause</dt><dd><code>make run</code> only executes the existing <code>simv</code>; it does not recompile.</dd>
+      <dt>Fix</dt><dd><code>make</code> (= compile + run), or <code>make compile</code> and then <code>make run</code>.
+        Only <code>seed</code> / <code>verbosity</code> / <code>TEST_NAME</code> are runtime arguments; changing those needs no rebuild.</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">02</span>The simulation ends at 0 ns with an almost empty log</h4>
+    <dl>
+      <dt>Symptom</dt><dd>No DRV / MON / SCR messages at all; it jumps straight to the report summary.</dd>
+      <dt>Cause</dt><dd>Forget <code>phase.raise_objection(this)</code>. Nobody objected, so UVM packed up at once.</dd>
+      <dt>Fix</dt><dd>Raise at the start of a time-consuming phase and drop at the end; the two must be paired.</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">03</span><code>Illegal time-consuming statement</code></h4>
+    <dl>
+      <dt>Symptom</dt><dd>You get this error at compile or run time.</dd>
+      <dt>Cause</dt><dd>You put a <code>build_phase</code> / <code>connect_phase</code> / <code>write()</code>
+        inside <code>function</code>, which is a <code>#10</code> or <code>@(posedge clk)</code>.</dd>
+      <dt>Fix</dt><dd>Anything that waits belongs in <code>run_phase</code> / <code>main_phase</code> (<code>task</code>).</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">04</span><code>UVM_FATAL: Unable to get interface</code></h4>
+    <dl>
+      <dt>Symptom</dt><dd>A fatal on the first run; the components were never built.</dd>
+      <dt>Cause</dt><dd>One of config_db's three essentials does not match: the <b>type</b> (<code>virtual adder_intf</code> ≠
+        <code>virtual adder_intf.drv</code>),<b>path</b>, <b>key string</b>.</dd>
+      <dt>Fix</dt><dd>Put the set line and the get line side by side and compare them character by character. Nine times out of ten it is the missing modport suffix.</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">05</span>The scoreboard is all red, but the DUT is clearly correct</h4>
+    <dl>
+      <dt>Symptom</dt><dd>Every transaction fails, and fails in a very regular way (as if off by one cycle).</dd>
+      <dt>Cause</dt><dd>The monitor's sampling timing is wrong. The DUT has one cycle of latency, so capturing
+        <code>in1/in2</code> and <code>out</code> on the same cycle pairs this transaction's input with the previous transaction's output.</dd>
+      <dt>Fix</dt><dd>Latch the inputs first and read the output only after <code>@(posedge clk)</code> (see the monitor example in chapter 4).</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">06</span>Results differ from run to run, or you occasionally catch a stale value</h4>
+    <dl>
+      <dt>Symptom</dt><dd>The same seed gives a different result on a different simulator version.</dd>
+      <dt>Cause</dt><dd>A sampling race. The DUT updates in the NBA region with <code>&lt;=</code>, while the monitor reads the moment it wakes at <code>@(posedge clk)</code>, and the order between them is not guaranteed.</dd>
+      <dt>Fix</dt><dd>Add a <code>#1</code> before sampling, or switch to a clocking block and let its
+        <code>input</code> skew define the sampling point explicitly.</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">07</span>The driver writes signals with <code>=</code></h4>
+    <dl>
+      <dt>Symptom</dt><dd>The waveform looks right, but the result is intermittent.</dd>
+      <dt>Cause</dt><dd>A blocking assignment races the DUT's <code>always_ff</code> for update order within the same time step.</dd>
+      <dt>Fix</dt><dd>Always drive DUT inputs with the non-blocking <code>&lt;=</code>.
+        Use <code>=</code>.</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">08</span>Comparisons use <code>==</code> rather than <code>===</code></h4>
+    <dl>
+      <dt>Symptom</dt><dd>When a signal is X, the comparison is neither PASS nor FAIL, and the if behaves strangely.</dd>
+      <dt>Cause</dt><dd><code>==</code> returns X when it meets X or Z (neither 0 nor 1).</dd>
+      <dt>Fix</dt><dd>Always compare four-valued signals with <code>===</code>, which is guaranteed to return 0 or 1 and compares X correctly.</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">09</span>Each loop iteration produces two transactions</h4>
+    <dl>
+      <dt>Symptom</dt><dd>The PASS count is double what you expect.</dd>
+      <dt>Cause</dt><dd>The sequence's <code>body()</code> uses both
+        <code>`uvm_do(m_trans)</code> and a hand-written <code>start_item/finish_item</code>.
+        <code>`uvm_do</code> already includes create + start_item + randomize + finish_item.</dd>
+      <dt>Fix</dt><dd>Pick one. Write it out by hand when you want a custom constraint or a log line; use <code>`uvm_do</code>.</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">10</span>The simulation runs for a long time and then <code>Hit max_iter</code></h4>
+    <dl>
+      <dt>Symptom</dt><dd>It exhausts the iteration cap and coverage is still low.</dd>
+      <dt>Cause</dt><dd>The constraints have boxed in the input space (<code>in1 &lt; 10</code> or <code>in1 == 3</code>, for instance),
+        so the high bins can never be hit.</dd>
+      <dt>Fix</dt><dd>This is in fact <b>a correct and valuable signal</b>: it tells you the constraints and the coverage goal contradict each other.
+        Use <code>cp1.get_coverage()</code> to find which coverpoint is stuck.</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">11</span>A factory override is set but has no effect</h4>
+    <dl>
+      <dt>Symptom</dt><dd><code>uvm_factory::get().print()</code> shows the override table, yet the behaviour is unchanged.</dd>
+      <dt>Cause</dt><dd>(a) the new class forgot <code>`uvm_object_utils</code>;
+        (b) somewhere uses <code>new()</code> rather than <code>type_id::create()</code>;
+        (c) the override was set after <code>create()</code>, too late to take effect.</dd>
+      <dt>Fix</dt><dd>Put the override at the very top of <code>build_phase</code> &mdash; the <b>first line</b> &mdash; before <code>super.build_phase()</code>.</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">12</span><code>+UVM_TESTNAME=... not found</code></h4>
+    <dl>
+      <dt>Symptom</dt><dd>UVM_FATAL: Requested test from command line not found.</dd>
+      <dt>Cause</dt><dd>The name given on the command line does not match the class name registered with <code>`uvm_component_utils(...)</code>
+        (a typo, or the Makefile's <code>TEST_NAME</code> was never updated).</dd>
+      <dt>Fix</dt><dd>The factory looks up <b>by string</b>, so the name must match exactly, case included.</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">13</span>A message never prints</h4>
+    <dl>
+      <dt>Symptom</dt><dd>You definitely wrote the <code>`uvm_info</code>, but it is nowhere in the log.</dd>
+      <dt>Cause</dt><dd>The message level is below the current verbosity threshold. A message written at <code>UVM_HIGH</code>
+        does not appear under the default <code>UVM_MEDIUM</code>.</dd>
+      <dt>Fix</dt><dd><code>make run verbosity=UVM_HIGH</code> (a runtime argument, no rebuild needed).
+        Put important statistics at <code>UVM_NONE</code>, which always prints.</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">14</span>Missing <code>`include "uvm_macros.svh"</code></h4>
+    <dl>
+      <dt>Symptom</dt><dd>A whole run of <code>`uvm_info</code> / <code>`uvm_component_utils</code> reported as undefined.</dd>
+      <dt>Cause</dt><dd><code>import uvm_pkg::*;</code> only brings in <b>class library</b>;
+        the macros come from <code>`include</code>.</dd>
+      <dt>Fix</dt><dd>Write both lines together at the top of the file, wrapped in an <code>`ifndef UVM_MACROS_SVH</code> guard so it is not included twice.</dd>
+    </dl>
+  </div>
+
+  <div class="pit">
+    <h4><span class="idx">15</span>The second transaction never goes out; it looks hung</h4>
+    <dl>
+      <dt>Symptom</dt><dd>You see the first DRV message and then nothing.</dd>
+      <dt>Cause</dt><dd>The driver's <code>get_next_item()</code> has no matching <code>item_done()</code>.
+        The sequencer believes the previous item is unfinished and will not hand over the next.</dd>
+      <dt>Fix</dt><dd>They come in pairs, with no <code>return</code> or <code>break</code> skipping past in between.</dd>
+    </dl>
+  </div>
+</section>
+
+<!-- ============ 13 ============ -->
+<section id="s13">
+  <h2 class="sec"><span class="num">13</span>Quick Reference for Running It</h2>
+
+  <h3>Make target</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Command</th><th>What it does</th><th>Enough after editing a .sv?</th></tr></thead>
+    <tbody>
+      <tr><td><code>make clean</code></td><td>Deletes <code>simv</code>, logs, fsdb and the rest of the build products</td><td>—</td></tr>
+      <tr><td><code>make compile</code></td><td>Compiles only, producing <code>simv</code></td><td>Yes</td></tr>
+      <tr><td><code>make run</code></td><td>Runs the existing <code>simv</code></td><td>✘ <b>No</b></td></tr>
+      <tr><td><code>make</code></td><td>compile + run</td><td>Yes, and the safest</td></tr>
+      <tr><td><code>make random</code></td><td>Compiles, then runs with a random seed</td><td>✔</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Runtime arguments: these three need no rebuild</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Argument</th><th>Example</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td><code>seed</code></td><td><code>make run seed=2</code></td>
+        <td>A different set of random stimulus. The same seed reproduces the same result &mdash; <b>always fix the seed when debugging</b></td></tr>
+      <tr><td><code>verbosity</code></td><td><code>make run verbosity=UVM_HIGH</code></td>
+        <td>Adjusts how much detail the log carries</td></tr>
+      <tr><td><code>TEST_NAME</code></td><td><code>make run TEST_NAME=test</code></td>
+        <td>Chooses which test class runs (equivalent to <code>+UVM_TESTNAME=</code>)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>The five verbosity levels</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Level</th><th>Value</th><th>When to use it</th></tr></thead>
+    <tbody>
+      <tr><td><code>UVM_NONE</code></td><td>0</td><td>Must print. Final statistics, the PASS/FAIL summary</td></tr>
+      <tr><td><code>UVM_LOW</code></td><td>100</td><td>Milestones: phase markers, iteration progress</td></tr>
+      <tr><td><code>UVM_MEDIUM</code></td><td>200</td><td><b>The default threshold</b>. The DRV/MON/SCR message for each transaction</td></tr>
+      <tr><td><code>UVM_HIGH</code></td><td>300</td><td>Debugging detail, such as every coverage sample</td></tr>
+      <tr><td><code>UVM_DEBUG</code></td><td>500</td><td>The most talkative</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="color:var(--fg-muted); font-size:.9rem">
+    The rule: <b>a message prints when its level is at or below the current threshold</b>. So under the default <code>UVM_MEDIUM</code>,
+    <code>NONE/LOW/MEDIUM</code> appears and <code>HIGH/DEBUG</code> is filtered out.
+  </p>
+
+  <h3>Tracing a log ID back to who printed it</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>ID</th><th>Source component</th><th>Seeing it means</th></tr></thead>
+    <tbody>
+      <tr><td><code>[SEQ]</code></td><td><code>sequence_c</code></td><td>a random stimulus was generated</td></tr>
+      <tr><td><code>[DRV]</code></td><td><code>driver_c</code></td><td>the stimulus has reached the pins</td></tr>
+      <tr><td><code>[MON]</code></td><td><code>monitor_c</code></td><td>a complete transaction was observed back from the pins</td></tr>
+      <tr><td><code>[SCR]</code></td><td><code>scoreboard_c</code></td><td>a comparison came out PASS or FAIL</td></tr>
+      <tr><td><code>[COV]</code></td><td><code>cov_coll_c</code></td><td>one sample was taken (visible only at <code>UVM_HIGH</code>)</td></tr>
+      <tr><td><code>[TEST]</code></td><td><code>test</code></td><td>iteration progress, coverage summary</td></tr>
+      <tr><td><code>[PHASE]</code></td><td><code>test</code></td><td>a phase marker (one you added yourself)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note">
+    <p><b>A suggested debugging order:</b> follow the <code>SEQ → DRV → MON → SCR</code> chain.
+    Wherever it breaks is where the problem is:<br>
+    no SEQ -> the sequence never started, or no objection was raised;<br>
+    SEQ but no DRV -> the driver is stuck in <code>get_next_item</code> or never received the vif;<br>
+    DRV but no MON -> the monitor's timing is wrong, or it is stuck at <code>wait()</code>;<br>
+    MON but no SCR -> the TLM connection was never made.</p>
+  </div>
+</section>
+
+<!-- ============ 14 ============ -->
+<section id="s14">
+  <h2 class="sec"><span class="num">14</span>Recap</h2>
+
+  <p>One sentence per chapter, to be used as an index &mdash; jump back from here when you cannot recall a section:</p>
+
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Ch.</th><th>In one sentence</th></tr></thead>
+    <tbody>
+      <tr><td><a href="#s1"><b>01</b></a></td><td>What UVM gives you is four things: reuse, randomisation, automatic checking and measurability</td></tr>
+      <tr><td><a href="#s2"><b>02</b></a></td><td>A class cannot touch a signal; <code>interface</code> + <code>virtual interface</code> is the only channel, and <code>modport</code> decides who may write</td></tr>
+      <tr><td><a href="#s3"><b>03</b></a></td><td>Components form a tree, and each level creates its children in its own <code>build_phase</code></td></tr>
+      <tr><td><a href="#s4"><b>04</b></a></td><td>Eight stations: object -> signal -> object, with the conversions happening in the driver and the monitor</td></tr>
+      <tr><td><a href="#s5"><b>05</b></a></td><td><code>uvm_object</code> is data and <code>uvm_component</code> is structure; their constructors and registration macros differ</td></tr>
+      <tr><td><a href="#s6"><b>06</b></a></td><td>Only run / main are tasks; no other phase may consume time, and objections decide when to pack up</td></tr>
+      <tr><td><a href="#s7"><b>07</b></a></td><td>Components never call each other; everything goes through <code>port.connect(export)</code>; switch to a FIFO when the output is delayed</td></tr>
+      <tr><td><a href="#s8"><b>08</b></a></td><td>config_db's type, path and key must all match exactly</td></tr>
+      <tr><td><a href="#s9"><b>09</b></a></td><td>Register -> <code>create()</code> -> override; miss any one and nothing is swapped</td></tr>
+      <tr><td><a href="#s10"><b>10</b></a></td><td>The scoreboard says whether it is wrong, coverage says whether it was ever tested</td></tr>
+      <tr><td><a href="#s11"><b>11</b></a></td><td>A different protocol touches only transaction / driver / monitor / interface; the architecture is untouched</td></tr>
+      <tr><td><a href="#s12"><b>12</b></a></td><td>Fifteen common mistakes; check this chapter first when you are stuck</td></tr>
+      <tr><td><a href="#s13"><b>13</b></a></td><td>Editing <code>.sv</code> always needs a rebuild; follow <code>SEQ→DRV→MON→SCR</code> to find where it breaks</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>If you only remember five things</h3>
+  <ol>
+    <li><b>The data flow is always</b> sequence -> sequencer -> driver -> interface -> DUT -> interface -> monitor -> analysis port -> scoreboard / coverage. When you are stuck, first ask which station it broke at.</li>
+    <li><b>Two families</b>: transactions are <code>uvm_object</code> (<code>new(name)</code> + <code>`uvm_object_utils</code>), components are <code>uvm_component</code> (<code>new(name, parent)</code> + <code>`uvm_component_utils</code>).</li>
+    <li><b>Always use <code>type_id::create()</code></b>, never <code>new()</code>. It is the prerequisite for a factory override.</li>
+    <li><b>Only <code>run_phase</code> / <code>main_phase</code> can consume time</b>; every other phase is a function.</li>
+    <li><b>Objections decide when the simulation ends</b>; forget to raise one and you finish at 0 ns.</li>
+  </ol>
+</section>
+
+<footer>
+  <p>UVM 1.2 / VCS. Every example is taken from a verification environment that actually compiles and runs.</p>
+</footer>
+
+</main>
+
+<script>
+(function(){
+  // ---------- minimal SystemVerilog syntax highlighting ----------
+  var KW = ("module endmodule interface endinterface modport program endprogram package endpackage "
+    +"class endclass extends implements virtual function endfunction task endtask automatic static "
+    +"begin end fork join join_any join_none if else while for foreach forever repeat do case endcase "
+    +"default return break continue new this super null void assert property endproperty cover sequence "
+    +"endsequence covergroup endgroup coverpoint bins cross option import export typedef enum struct "
+    +"union parameter localparam always always_ff always_comb always_latch initial assign wait disable "
+    +"iff posedge negedge input output inout ref const rand randc constraint randomize inside dist "
+    +"solve before with logic bit int integer real string byte shortint longint reg wire genvar unique "
+    +"priority").split(/\s+/);
+  var TYPES = ("uvm_test uvm_env uvm_agent uvm_driver uvm_monitor uvm_scoreboard uvm_subscriber "
+    +"uvm_sequencer uvm_sequence uvm_sequence_item uvm_component uvm_object uvm_phase uvm_config_db "
+    +"uvm_analysis_port uvm_analysis_imp uvm_analysis_export uvm_tlm_analysis_fifo uvm_factory uvm_root "
+    +"uvm_active_passive_enum").split(/\s+/);
+  var kwSet = {}, tySet = {};
+  KW.forEach(function(w){kwSet[w]=1;});
+  TYPES.forEach(function(w){tySet[w]=1;});
+
+  var RE = new RegExp([
+    "(\\/\\/[^\\n]*)",                                  // 1 comment
+    "(\"(?:[^\"\\\\\\n]|\\\\.)*\")",                    // 2 string
+    "(`[A-Za-z_]\\w*)",                                 // 3 macro
+    "(\\$[A-Za-z_]\\w*)",                               // 4 system task
+    "(\\b\\d+'[sSbBoOdDhH]?[0-9a-fA-FxXzZ_]+)",         // 5 sized literal
+    "(\\b\\d+(?:\\.\\d+)?(?:ns|ps|us|ms|s)?\\b)",       // 6 number
+    "(\\b[A-Za-z_]\\w*\\b)"                             // 7 word
+  ].join("|"), "g");
+
+  function esc(s){
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+  function span(cls, txt){ return '<span class="tok-'+cls+'">'+esc(txt)+'</span>'; }
+
+  function highlight(src){
+    var out = "", last = 0, m;
+    RE.lastIndex = 0;
+    while ((m = RE.exec(src)) !== null){
+      out += esc(src.slice(last, m.index));
+      if (m[1])      out += span("c", m[1]);
+      else if (m[2]) out += span("s", m[2]);
+      else if (m[3]) out += span("m", m[3]);
+      else if (m[4]) out += span("m", m[4]);
+      else if (m[5]) out += span("n", m[5]);
+      else if (m[6]) out += span("n", m[6]);
+      else if (m[7]){
+        var w = m[7];
+        if (kwSet[w])                       out += span("k", w);
+        else if (tySet[w])                  out += span("t", w);
+        else if (/^UVM_[A-Z0-9_]+$/.test(w))out += span("n", w);
+        else if (/_c$/.test(w))             out += span("t", w);
+        else                                out += esc(w);
+      }
+      last = RE.lastIndex;
+    }
+    out += esc(src.slice(last));
+    return out;
+  }
+
+  document.querySelectorAll("pre > code.sv").forEach(function(el){
+    el.innerHTML = highlight(el.textContent);
+  });
+
+  // ---------- contents open/close ----------
+  var root     = document.documentElement,
+      toggle   = document.getElementById("tocToggle"),
+      backdrop = document.getElementById("tocBackdrop");
+
+  function isOpen(){ return !root.classList.contains("toc-closed"); }
+
+  function setOpen(open, remember){
+    root.classList.toggle("toc-closed", !open);
+    if (toggle) toggle.setAttribute("aria-expanded", String(open));
+    if (remember) { try { localStorage.setItem("uvm-toc-en", open ? "open" : "closed"); } catch (e) {} }
+  }
+
+  setOpen(isOpen(), false);   // sync aria-expanded with what the first-paint script decided
+
+  if (toggle)   toggle.addEventListener("click", function(){ setOpen(!isOpen(), true); });
+  if (backdrop) backdrop.addEventListener("click", function(){ setOpen(false, true); });
+
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape" && isOpen() && window.innerWidth < 1440) setOpen(false, false);
+  });
+
+  // ---------- contents highlighting ----------
+  var links = Array.prototype.slice.call(document.querySelectorAll("nav.toc a"));
+
+  // on a narrow viewport, close the drawer after a chapter is tapped so it stops covering the text
+  links.forEach(function(a){
+    a.addEventListener("click", function(){
+      if (window.innerWidth < 1440) setOpen(false, false);
+    });
+  });
+  var secs  = links.map(function(a){ return document.querySelector(a.getAttribute("href")); })
+                   .filter(Boolean);
+  if (!secs.length) return;
+
+  function sync(){
+    var y = window.scrollY + 120, cur = 0;
+    for (var i = 0; i < secs.length; i++){
+      if (secs[i].offsetTop <= y) cur = i;
+    }
+    links.forEach(function(a, i){ a.classList.toggle("active", i === cur); });
+  }
+  var ticking = false;
+  window.addEventListener("scroll", function(){
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function(){ sync(); ticking = false; });
+  }, {passive:true});
+  sync();
+})();
+</script>
+
+</body>
+</html>

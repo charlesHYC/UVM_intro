@@ -123,6 +123,17 @@ nav.toc h2{
   font-size:.72rem; letter-spacing:.16em; text-transform:uppercase;
   color:var(--fg-faint); margin:0 0 12px; font-weight:600;
 }
+nav.toc .lang{
+  padding:6px 18px 12px; margin-bottom:6px;
+  border-bottom:1px solid var(--line);
+  font-size:12.5px; color:var(--fg-faint);
+}
+nav.toc .lang a{
+  display:inline; padding:0; border-left:0; color:var(--fg-muted);
+  text-decoration:none; border-bottom:1px solid var(--line-strong);
+}
+nav.toc .lang a::before{content:none}
+nav.toc .lang a:hover{color:var(--accent); background:none; border-bottom-color:var(--accent)}
 nav.toc ol{list-style:none; margin:0; padding:0; counter-reset:toc}
 nav.toc li{counter-increment:toc; margin:0}
 nav.toc a{
@@ -324,6 +335,7 @@ footer{border-top:1px solid var(--line); padding:28px 0 60px; color:var(--fg-fai
 
 <nav class="toc" id="toc">
   <h2>目錄</h2>
+  <div class="lang">中文 &middot; <a href="index_en.html">English</a></div>
   <ol>
     <li><a href="#s1">為什麼需要 UVM</a></li>
     <li><a href="#s2">Interface：class 與 module 的交界</a></li>
